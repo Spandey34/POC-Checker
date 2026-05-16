@@ -106,7 +106,7 @@ const adminSearch = async (
           );
 
         const partialName =
-          compactName.includes(
+          compactName.startsWith(
             normalized
           );
 
