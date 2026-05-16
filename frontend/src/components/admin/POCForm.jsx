@@ -55,7 +55,7 @@ export default function POCForm({
     setSaving(true);
 
     try {
-      if (editing) {
+      if (editing) {console.log("Ok",payload);
         await updatePOC(editing._id, payload);
 
         toast.success("POC updated");
