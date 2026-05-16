@@ -1,5 +1,7 @@
 import { useState, useRef } from 'react';
+
 import { adminSearch } from '../../services/pocService';
+
 import { BranchBadge } from '../common/Badge';
 
 export default function AdminSearch() {
@@ -12,7 +14,8 @@ export default function AdminSearch() {
   const [state, setState] =
     useState('idle');
 
-  const debounceRef = useRef(null);
+  const debounceRef =
+    useRef(null);
 
   const handleChange = (e) => {
     const val = e.target.value;
@@ -25,7 +28,9 @@ export default function AdminSearch() {
 
     if (!val.trim()) {
       setResults([]);
+
       setState('idle');
+
       return;
     }
 
@@ -53,9 +58,10 @@ export default function AdminSearch() {
       </h3>
 
       <p className="text-xs text-slate-500 mb-4">
-        Search by full name or any
-        alias (e.g. "mmt" →
-        MakeMyTrip)
+        Search using company name,
+        acronym, or aliases
+        (e.g. "TI" → Texas
+        Instruments)
       </p>
 
       <div className="relative">
@@ -65,7 +71,7 @@ export default function AdminSearch() {
 
         <input
           className="input pl-9"
-          placeholder="Type company name or alias…"
+          placeholder="Search company, acronym, alias..."
           value={query}
           onChange={handleChange}
         />
@@ -100,12 +106,23 @@ export default function AdminSearch() {
                 className="flex items-start justify-between p-3 rounded-xl border border-slate-200 hover:border-navy/20 hover:bg-slate-50 transition-all"
               >
                 <div>
-                  <p className="font-body font-semibold text-navy">
-                    {poc.name}
-                  </p>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <p className="font-body font-semibold text-navy">
+                      {poc.name}
+                    </p>
 
-                  {poc.aliases.length >
-                    0 && (
+                    {poc.acronyms
+                      ?.length > 0 && (
+                      <span className="tag bg-navy/5 text-navy text-[10px] font-semibold uppercase">
+                        {poc.acronyms.join(
+                          ', '
+                        )}
+                      </span>
+                    )}
+                  </div>
+
+                  {poc.aliases
+                    ?.length > 0 && (
                     <p className="text-xs text-slate-400 mt-0.5">
                       Aliases:{' '}
                       {poc.aliases.join(
@@ -117,7 +134,9 @@ export default function AdminSearch() {
 
                 <div className="ml-4">
                   <BranchBadge
-                    branch={poc.branch}
+                    branch={
+                      poc.branch
+                    }
                   />
                 </div>
               </div>

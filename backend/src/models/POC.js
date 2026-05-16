@@ -10,6 +10,23 @@ const BRANCHES = [
   'Civil',
 ];
 
+const generateAcronyms = (name) => {
+  const words = name
+    .trim()
+    .split(/\s+/);
+
+  if (words.length <= 1) {
+    return [];
+  }
+
+  return [
+    words
+      .map((w) => w[0])
+      .join('')
+      .toLowerCase(),
+  ];
+};
+
 const POCSchema = new mongoose.Schema(
   {
     name: {
@@ -26,6 +43,12 @@ const POCSchema = new mongoose.Schema(
     aliases: {
       type: [String],
       default: [],
+    },
+
+    acronyms: {
+      type: [String],
+      default: [],
+      index: true,
     },
 
     branch: {
@@ -46,9 +69,13 @@ POCSchema.pre('save', function (next) {
   this.nameLower =
     this.name.toLowerCase().trim();
 
-  this.aliases = this.aliases.map(
-    (a) => a.toLowerCase().trim()
-  );
+  this.aliases =
+    this.aliases.map((a) =>
+      a.toLowerCase().trim()
+    );
+
+  this.acronyms =
+    generateAcronyms(this.name);
 
   next();
 });
@@ -56,13 +83,19 @@ POCSchema.pre('save', function (next) {
 POCSchema.pre(
   'findOneAndUpdate',
   function (next) {
-    const update = this.getUpdate();
+    const update =
+      this.getUpdate();
 
     if (update.name) {
       update.nameLower =
         update.name
           .toLowerCase()
           .trim();
+
+      update.acronyms =
+        generateAcronyms(
+          update.name
+        );
     }
 
     if (update.aliases) {
@@ -77,7 +110,10 @@ POCSchema.pre(
 );
 
 module.exports =
-  mongoose.model('POC', POCSchema);
+  mongoose.model(
+    'POC',
+    POCSchema
+  );
 
 module.exports.BRANCHES =
   BRANCHES;

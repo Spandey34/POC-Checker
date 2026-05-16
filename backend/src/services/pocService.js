@@ -1,15 +1,18 @@
-const POC = require('../models/POC');
+const POC =
+  require('../models/POC');
 
 const searchByName = async (
   query
 ) => {
-  const normalized = query
-    .toLowerCase()
-    .trim();
+  const normalized =
+    query
+      .toLowerCase()
+      .trim();
 
   const result =
     await POC.findOne({
-      nameLower: normalized,
+      nameLower:
+        normalized,
     }).lean();
 
   return result;
@@ -18,16 +21,18 @@ const searchByName = async (
 const adminSearch = async (
   query
 ) => {
-  const normalized = query
-    .toLowerCase()
-    .trim();
+  const normalized =
+    query
+      .toLowerCase()
+      .trim();
 
   const results =
     await POC.find({
       $or: [
         {
           nameLower: {
-            $regex: normalized,
+            $regex:
+              normalized,
             $options: 'i',
           },
         },
@@ -35,25 +40,63 @@ const adminSearch = async (
         {
           aliases: {
             $elemMatch: {
-              $regex: normalized,
+              $regex:
+                normalized,
+              $options: 'i',
+            },
+          },
+        },
+
+        {
+          acronyms: {
+            $elemMatch: {
+              $regex: `^${normalized}$`,
               $options: 'i',
             },
           },
         },
       ],
-    })
-      .sort({ name: 1 })
-      .lean();
+    }).lean();
 
-  return results;
+  const ranked =
+    results.sort((a, b) => {
+      const aExact =
+        a.acronyms?.includes(
+          normalized
+        );
+
+      const bExact =
+        b.acronyms?.includes(
+          normalized
+        );
+
+      if (
+        aExact &&
+        !bExact
+      )
+        return -1;
+
+      if (
+        !aExact &&
+        bExact
+      )
+        return 1;
+
+      return a.name.localeCompare(
+        b.name
+      );
+    });
+
+  return ranked;
 };
 
 const getAllPOCs = async (
   branch
 ) => {
-  const filter = branch
-    ? { branch }
-    : {};
+  const filter =
+    branch
+      ? { branch }
+      : {};
 
   return POC.find(filter)
     .sort({ name: 1 })
@@ -66,11 +109,15 @@ const addPOC = async ({
   branch,
   addedBy,
 }) => {
+  const normalized =
+    name
+      .toLowerCase()
+      .trim();
+
   const existing =
     await POC.findOne({
-      nameLower: name
-        .toLowerCase()
-        .trim(),
+      nameLower:
+        normalized,
     });
 
   if (existing) {
@@ -79,12 +126,17 @@ const addPOC = async ({
     );
   }
 
-  const poc = new POC({
-    name,
-    aliases: aliases || [],
-    branch,
-    addedBy,
-  });
+  const poc =
+    new POC({
+      name,
+
+      aliases:
+        aliases || [],
+
+      branch,
+
+      addedBy,
+    });
 
   await poc.save();
 
@@ -118,7 +170,9 @@ const deletePOC = async (
   id
 ) => {
   const poc =
-    await POC.findByIdAndDelete(id);
+    await POC.findByIdAndDelete(
+      id
+    );
 
   if (!poc) {
     throw new Error(

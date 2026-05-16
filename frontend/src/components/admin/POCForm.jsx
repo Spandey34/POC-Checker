@@ -10,6 +10,15 @@ const empty = {
   branch: "",
 };
 
+const generateAcronym = (name) => {
+  return name
+    .trim()
+    .split(/\s+/)
+    .map((word) => word[0])
+    .join("")
+    .toUpperCase();
+};
+
 export default function POCForm({
   isOpen,
   onClose,
@@ -31,6 +40,11 @@ export default function POCForm({
       setForm(empty);
     }
   }, [editing, isOpen]);
+
+  const acronym =
+    form.name.trim().split(" ").length > 1
+      ? generateAcronym(form.name)
+      : "";
 
   const handleSubmit = async () => {
     if (!form.name.trim()) {
@@ -68,7 +82,10 @@ export default function POCForm({
       onSuccess();
       onClose();
     } catch (err) {
-      toast.error(err.response?.data?.message || "Something went wrong");
+      toast.error(
+        err.response?.data?.message ||
+          "Something went wrong"
+      );
     } finally {
       setSaving(false);
     }
@@ -78,15 +95,21 @@ export default function POCForm({
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title={editing ? "Edit POC" : "Add New POC"}
+      title={
+        editing
+          ? "Edit POC"
+          : "Add New POC"
+      }
     >
       <div className="space-y-4">
         <div>
-          <label className="label">Company Name *</label>
+          <label className="label">
+            Company Name *
+          </label>
 
           <input
             className="input"
-            placeholder="e.g. MakeMyTrip"
+            placeholder="e.g. Texas Instruments"
             value={form.name}
             onChange={(e) =>
               setForm((f) => ({
@@ -95,14 +118,25 @@ export default function POCForm({
               }))
             }
           />
+
+          {acronym && (
+            <p className="text-xs text-slate-500 mt-1">
+              Generated acronym:
+              <span className="font-semibold ml-1">
+                {acronym}
+              </span>
+            </p>
+          )}
         </div>
 
         <div>
-          <label className="label">Aliases / Shortcuts</label>
+          <label className="label">
+            Custom Aliases (Optional)
+          </label>
 
           <input
             className="input"
-            placeholder="e.g. mmt, make my trip"
+            placeholder="e.g. facebook, google"
             value={form.aliases}
             onChange={(e) =>
               setForm((f) => ({
@@ -113,12 +147,14 @@ export default function POCForm({
           />
 
           <p className="text-xs text-slate-400 mt-1">
-            Admin-only shortcuts for faster search
+            Acronyms are generated automatically
           </p>
         </div>
 
         <div>
-          <label className="label">Branch *</label>
+          <label className="label">
+            Branch *
+          </label>
 
           <select
             className="input"
@@ -130,10 +166,15 @@ export default function POCForm({
               }))
             }
           >
-            <option value="">Select branch</option>
+            <option value="">
+              Select branch
+            </option>
 
             {BRANCHES.map((b) => (
-              <option key={b} value={b}>
+              <option
+                key={b}
+                value={b}
+              >
                 {b}
               </option>
             ))}
@@ -154,7 +195,11 @@ export default function POCForm({
             className="btn-primary text-sm py-2 px-4"
             disabled={saving}
           >
-            {saving ? "Saving…" : editing ? "Update POC" : "Add POC"}
+            {saving
+              ? "Saving…"
+              : editing
+              ? "Update POC"
+              : "Add POC"}
           </button>
         </div>
       </div>
