@@ -1,6 +1,6 @@
 import { createContext, useContext, useEffect, useState } from 'react';
 import { useAuth, useClerk, useUser } from '@clerk/clerk-react';
-import { injectTokenGetter } from '../services/api';
+import { setAuthToken } from '../services/api';
 import { getMe } from '../services/userService';
 
 const UserContext = createContext(null);
@@ -17,7 +17,7 @@ export function UserProvider({ children }) {
     if (!isLoaded) return;
 
     if (!isSignedIn) {
-      injectTokenGetter(null);
+      setAuthToken(null);
       setDbUser(null);
       setLoading(false);
       return;
@@ -39,7 +39,7 @@ export function UserProvider({ children }) {
       try {
         const token = await getToken();
 
-        injectTokenGetter(token);
+        setAuthToken(token);
 
         const userData = await getMe();
 
@@ -56,7 +56,7 @@ export function UserProvider({ children }) {
     try {
       const token = await getToken();
 
-      injectTokenGetter(token);
+      setAuthToken(token);
 
       const userData = await getMe();
 
