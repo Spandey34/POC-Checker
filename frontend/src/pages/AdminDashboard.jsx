@@ -31,9 +31,9 @@ export default function AdminDashboard() {
     setUserLoading(true);
     try { setUsers(await getAllUsers()); } finally { setUserLoading(false); }
   }, []);
-  useEffect(() => { if(activeTab== 'Overview' ) setBranchFilter('') }, [activeTab]);
+  useEffect(() => { if(activeTab!== 'POC Directory' ) setBranchFilter('') }, [activeTab]);
 
-  useEffect(() => { loadPOCs(); }, [loadPOCs]);
+  useEffect(() => {loadPOCs(); }, [loadPOCs]);
   useEffect(() => { loadUsers(); }, [loadUsers]);
 
   const handleEdit = (poc) => { setEditingPOC(poc); setShowForm(true); };
