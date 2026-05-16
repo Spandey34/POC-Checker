@@ -1,70 +1,122 @@
-import { createContext, useContext, useEffect, useState } from 'react';
-import { useAuth, useClerk, useUser } from '@clerk/clerk-react';
-import { injectTokenGetter } from '../services/api';
-import { getMe } from '../services/userService';
+import {
+  createContext,
+  useContext,
+  useEffect,
+  useState,
+} from 'react';
 
-const UserContext = createContext(null);
+import {
+  useAuth,
+  useClerk,
+  useUser,
+} from '@clerk/clerk-react';
 
-export function UserProvider({ children }) {
-  const { isLoaded, isSignedIn, getToken } = useAuth();
-  const { user } = useUser();
-  const { signOut } = useClerk();
+import {
+  injectTokenGetter,
+} from '../services/api';
 
-  const [dbUser, setDbUser] = useState(null);
-  const [loading, setLoading] = useState(true);
+import {
+  getMe,
+} from '../services/userService';
+
+const UserContext =
+  createContext(null);
+
+export function UserProvider({
+  children,
+}) {
+  const {
+    isLoaded,
+    isSignedIn,
+    getToken,
+  } = useAuth();
+
+  const { user } =
+    useUser();
+
+  const { signOut } =
+    useClerk();
+
+  const [dbUser, setDbUser] =
+    useState(null);
+
+  const [loading, setLoading] =
+    useState(true);
 
   useEffect(() => {
     if (!isLoaded) return;
-    injectTokenGetter(getToken);
+
+    injectTokenGetter(
+      getToken
+    );
+
     if (!isSignedIn) {
-      injectTokenGetter(null);
       setDbUser(null);
+
       setLoading(false);
+
       return;
     }
 
     const email =
-      user?.primaryEmailAddress?.emailAddress;
+      user
+        ?.primaryEmailAddress
+        ?.emailAddress;
 
     if (
       email &&
-      !email.endsWith('@nitjsr.ac.in')
+      !email.endsWith(
+        '@nitjsr.ac.in'
+      )
     ) {
-      alert('Only NIT JSR emails allowed');
+      alert(
+        'Only NIT JSR emails allowed'
+      );
+
       signOut();
+
       return;
     }
 
     (async () => {
       try {
-        const token = await getToken();
+        const userData =
+          await getMe();
 
-        injectTokenGetter(token);
-
-        const userData = await getMe();
-
-        setDbUser(userData);
+        setDbUser(
+          userData
+        );
       } catch {
-        setDbUser(null);
+        setDbUser(
+          null
+        );
       } finally {
-        setLoading(false);
+        setLoading(
+          false
+        );
       }
     })();
-  }, [isLoaded, isSignedIn, user]);
+  }, [
+    isLoaded,
+    isSignedIn,
+    user,
+  ]);
 
-  const refreshUser = async () => {
-    try {
-      const token = await getToken();
+  const refreshUser =
+    async () => {
+      try {
+        const userData =
+          await getMe();
 
-      injectTokenGetter(token);
-
-      const userData = await getMe();
-
-      setDbUser(userData);
-    } catch {
-      setDbUser(null);
-    }
-  };
+        setDbUser(
+          userData
+        );
+      } catch {
+        setDbUser(
+          null
+        );
+      }
+    };
 
   return (
     <UserContext.Provider
@@ -79,5 +131,8 @@ export function UserProvider({ children }) {
   );
 }
 
-export const useDbUser = () =>
-  useContext(UserContext);
+export const useDbUser =
+  () =>
+    useContext(
+      UserContext
+    );
