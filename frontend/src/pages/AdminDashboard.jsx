@@ -112,7 +112,7 @@ export default function AdminDashboard() {
               <h3 className="font-display font-bold text-navy mb-4">POCs by Branch</h3>
               <div className="space-y-3">
                 {BRANCHES.map((b) => {
-                  const count = pocs.filter((p) => p.branches.includes(b)).length;
+                  const count = pocs.filter((p) => p.branch==b).length;
                   const pct   = pocs.length ? Math.round((count / pocs.length) * 100) : 0;
                   return (
                     <div key={b} className="flex items-center gap-3">
