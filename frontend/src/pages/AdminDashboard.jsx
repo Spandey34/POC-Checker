@@ -31,7 +31,6 @@ export default function AdminDashboard() {
     setUserLoading(true);
     try { setUsers(await getAllUsers()); } finally { setUserLoading(false); }
   }, []);
-  useEffect(() => { setBranchFilter('') }, [activeTab]);
 
   useEffect(() => { loadPOCs(); }, [loadPOCs]);
   useEffect(() => { loadUsers(); }, [loadUsers]);
@@ -107,6 +106,7 @@ export default function AdminDashboard() {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* Admin search */}
             <AdminSearch />
+            {setActiveTab('')}
 
             {/* Branch breakdown */}
             <div className="card p-6">
