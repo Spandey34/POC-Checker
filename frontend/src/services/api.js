@@ -27,12 +27,6 @@ export const setAuthToken = (
 
 api.interceptors.request.use(
   (config) => {
-    console.log(
-      'REQUEST:',
-      config.baseURL +
-        config.url
-    );
-
     return config;
   },
 
