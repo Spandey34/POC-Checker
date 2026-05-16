@@ -23,7 +23,7 @@ export default function AdminDashboard() {
   const [editingPOC, setEditingPOC] = useState(null);
 
   const loadPOCs = useCallback(
-    async (branch = branchFilter) => {
+    async (branch = "") => {
       setPocLoading(true);
 
       try {
@@ -35,15 +35,13 @@ export default function AdminDashboard() {
       }
     },
 
-    [branchFilter],
+    [],
   );
-  const loadUsers =
-  useCallback(async () => {
+  const loadUsers = useCallback(async () => {
     setUserLoading(true);
 
     try {
-      const data =
-        await getAllUsers();
+      const data = await getAllUsers();
 
       setUsers(data);
     } finally {
@@ -63,11 +61,13 @@ export default function AdminDashboard() {
 
   useEffect(() => {
     if (activeTab === "POC Directory") {
-      setBranchFilter("CSE");
+      if (!branchFilter) {
+        setBranchFilter("CSE");
 
-      loadPOCs("CSE");
+        loadPOCs("CSE");
+      }
     }
-  }, [activeTab, loadPOCs]);
+  }, [activeTab, branchFilter, loadPOCs]);
 
   useEffect(() => {
     if (activeTab === "Users") {
@@ -266,7 +266,6 @@ export default function AdminDashboard() {
                     key={b}
                     onClick={() => {
                       setBranchFilter(b);
-
                       loadPOCs(b);
                     }}
                     className={`text-xs px-3 py-1.5 rounded-lg font-medium border transition-all ${
