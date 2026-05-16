@@ -15,7 +15,7 @@ router.get('/search', authenticate, isVerified, ctrl.userSearch);
 router.get('/admin-search', authenticate, isAdmin, ctrl.adminSearch);
 router.get('/',             authenticate, isAdmin, ctrl.getAll);
 router.post('/',            authenticate, isAdmin, ctrl.addPOC);
-router.put('/:id',          authenticate, isAdmin, ctrl.updatePOC);
+router.put('/:id',authenticate, isAdmin, ctrl.updatePOC);
 router.delete('/:id',       authenticate, isAdmin, ctrl.deletePOC);
 
 module.exports = router;
