@@ -24,70 +24,143 @@ const adminSearch = async (
   const normalized =
     query
       .toLowerCase()
+      .replace(/\s+/g, '')
       .trim();
 
-  const results =
-    await POC.find({
-      $or: [
-        {
-          nameLower: {
-            $regex:
-              normalized,
-            $options: 'i',
-          },
-        },
+  if (!normalized) {
+    return [];
+  }
 
-        {
-          aliases: {
-            $elemMatch: {
-              $regex:
-                normalized,
-              $options: 'i',
-            },
-          },
-        },
+  const allPOCs =
+    await POC.find({}).lean();
 
-        {
-          acronyms: {
-            $elemMatch: {
-              $regex: `^${normalized}$`,
-              $options: 'i',
-            },
-          },
-        },
-      ],
-    }).lean();
+  const scored =
+    allPOCs
+      .map((poc) => {
+        const name =
+          poc.nameLower || '';
 
-  const ranked =
-    results.sort((a, b) => {
-      const aExact =
-        a.acronyms?.includes(
-          normalized
-        );
+        const compactName =
+          name.replace(
+            /\s+/g,
+            ''
+          );
 
-      const bExact =
-        b.acronyms?.includes(
-          normalized
-        );
+        const aliases =
+          (poc.aliases || []).map(
+            (a) =>
+              a
+                .toLowerCase()
+                .replace(
+                  /\s+/g,
+                  ''
+                )
+          );
 
-      if (
-        aExact &&
-        !bExact
+        const acronyms =
+          (
+            poc.acronyms ||
+            []
+          ).map((a) =>
+            a
+              .toLowerCase()
+              .replace(
+                /\s+/g,
+                ''
+              )
+          );
+
+        let score = 0;
+
+        const exactAcronym =
+          acronyms.includes(
+            normalized
+          );
+
+        const partialAcronym =
+          acronyms.some((a) =>
+            a.includes(
+              normalized
+            )
+          );
+
+        const exactAlias =
+          aliases.includes(
+            normalized
+          );
+
+        const partialAlias =
+          aliases.some((a) =>
+            a.includes(
+              normalized
+            )
+          );
+
+        const exactName =
+          compactName ===
+          normalized;
+
+        const startsWithName =
+          compactName.startsWith(
+            normalized
+          );
+
+        const partialName =
+          compactName.includes(
+            normalized
+          );
+
+        if (exactAcronym) {
+          score = 100;
+        } else if (
+          partialAcronym
+        ) {
+          score = 90;
+        } else if (
+          exactAlias
+        ) {
+          score = 80;
+        } else if (
+          partialAlias
+        ) {
+          score = 70;
+        } else if (
+          exactName
+        ) {
+          score = 60;
+        } else if (
+          startsWithName
+        ) {
+          score = 50;
+        } else if (
+          partialName
+        ) {
+          score = 40;
+        }
+
+        return {
+          ...poc,
+          score,
+        };
+      })
+      .filter(
+        (poc) => poc.score > 0
       )
-        return -1;
+      .sort((a, b) => {
+        if (
+          b.score !== a.score
+        ) {
+          return (
+            b.score - a.score
+          );
+        }
 
-      if (
-        !aExact &&
-        bExact
-      )
-        return 1;
+        return a.name.localeCompare(
+          b.name
+        );
+      });
 
-      return a.name.localeCompare(
-        b.name
-      );
-    });
-
-  return ranked;
+  return scored;
 };
 
 const getAllPOCs = async (
