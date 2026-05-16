@@ -8,7 +8,7 @@ const { getMe, getAllUsers, toggleVerification } = require('../controllers/userC
 router.get('/me', authenticate, getMe);
 
 // Admin only
-router.get('/',            authenticate, isAdmin, getAllUsers);
+router.get('/',authenticate, isAdmin, getAllUsers);
 router.patch('/:id/toggle-verify', authenticate, isAdmin, toggleVerification);
 
 module.exports = router;

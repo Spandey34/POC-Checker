@@ -9,7 +9,8 @@ const authenticate = [
   requireAuth(),
   async (req, res, next) => {
     try {
-      const clerkId = req.auth.userId;
+      const { userId } = req.auth();
+      const clerkId = userId;
       const user = await User.findOneAndUpdate(
         { clerkId },
         { lastVisit: new Date() },

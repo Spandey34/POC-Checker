@@ -2,8 +2,8 @@ const userService = require('../services/userService');
 
 const getMe = async (req, res, next) => {
   try {
-    const user = await userService.getMe(req.auth.userId);
-    return res.json(user);
+    const user = await userService.getMe(req.auth().userId);
+    res.json(user);
   } catch (err) {
     next(err);
   }
