@@ -60,7 +60,6 @@ export default function POCForm({
 
         toast.success("POC updated");
       } else {
-        console.log("Ok",payload)
         await addPOC(payload);
 
         toast.success("POC added");
