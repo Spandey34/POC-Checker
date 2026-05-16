@@ -49,6 +49,12 @@
     @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium;
   }
 }
+html,
+body,
+#root {
+  width: 100%;
+  overflow-x: hidden;
+}
 
 /* Scrollbar */
 ::-webkit-scrollbar { width: 6px; height: 6px; }

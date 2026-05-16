@@ -17,7 +17,7 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-navy-dark via-navy to-navy-light flex">
+    <div className="min-h-screen w-screen overflow-x-hidden overflow-y-auto bg-gradient-to-br from-navy-dark via-navy to-navy-light flex">
       {/* Left panel */}
       <div className="hidden lg:flex flex-col justify-between w-1/2 p-12">
         <div className="flex items-center gap-3">
@@ -56,8 +56,8 @@ export default function LoginPage() {
       </div>
 
       {/* Right panel – Clerk sign in */}
-      <div className="flex-1 flex items-center justify-center p-6 bg-slate-50/5 backdrop-blur-sm lg:rounded-l-3xl">
-        <div className="w-full max-w-md">
+      <div className="flex-1 w-full flex items-center justify-center p-4 sm:p-6 bg-slate-50/5 backdrop-blur-sm lg:rounded-l-3xl overflow-hidden">
+        <div className="w-full max-w-md overflow-hidden">
           <div className="text-center mb-8 lg:hidden">
             <div className="inline-flex items-center gap-2 mb-4">
               <div className="w-8 h-8 rounded-lg bg-gold flex items-center justify-center">
@@ -70,7 +70,7 @@ export default function LoginPage() {
           <SignIn
             appearance={{
               elements: {
-                rootBox: 'w-full',
+                rootBox: 'w-full !max-w-full',
                 card: 'shadow-2xl rounded-2xl border-0',
                 headerTitle: 'font-display font-bold text-navy',
                 formButtonPrimary: 'bg-navy hover:bg-navy-light font-body',
