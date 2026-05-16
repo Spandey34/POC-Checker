@@ -174,14 +174,6 @@ export default function AdminDashboard() {
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               {/* Branch filter */}
               <div className="flex flex-wrap gap-2 items-center">
-                <button
-                  onClick={() => setBranchFilter('')}
-                  className={`text-xs px-3 py-1.5 rounded-lg font-medium border transition-all ${
-                    !branchFilter ? 'bg-navy text-white border-navy' : 'bg-white text-slate-600 border-slate-200 hover:border-navy/30'
-                  }`}
-                >
-                  All
-                </button>
                 {BRANCHES.map((b) => (
                   <button
                     key={b}
