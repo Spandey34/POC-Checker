@@ -31,7 +31,7 @@ export default function AdminDashboard() {
     setUserLoading(true);
     try { setUsers(await getAllUsers()); } finally { setUserLoading(false); }
   }, []);
-  useEffect(() => { activeTab!== 'POC Directory' ? setBranchFilter('CSE') : setBranchFilter('') }, [activeTab]);
+  useEffect(() => { activeTab=== 'POC Directory' ? setBranchFilter('CSE') : setBranchFilter('') }, [activeTab]);
 
   useEffect(() => {loadPOCs(); }, [loadPOCs]);
   useEffect(() => { loadUsers(); }, [loadUsers]);
