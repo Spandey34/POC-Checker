@@ -70,7 +70,7 @@ export default function POCForm({
 
     try {
       if (editing) {
-        console.log("Editinf Id: ", editing._id);
+        console.log("Editing Id: ", editing._id);
         await updatePOC(editing._id, payload);
 
         toast.success("POC updated");
