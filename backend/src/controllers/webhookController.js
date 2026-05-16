@@ -1,50 +1,149 @@
 const { Webhook } = require('svix');
+
+const {
+  clerkClient,
+} = require('@clerk/backend');
+
 const userService = require('../services/userService');
 
-const handleClerkWebhook = async (req, res) => {
-  const WEBHOOK_SECRET = process.env.CLERK_WEBHOOK_SECRET;
+const handleClerkWebhook = async (
+  req,
+  res
+) => {
+  const WEBHOOK_SECRET =
+    process.env
+      .CLERK_WEBHOOK_SECRET;
+
   if (!WEBHOOK_SECRET) {
-    return res.status(500).json({ message: 'Webhook secret not configured.' });
+    return res
+      .status(500)
+      .json({
+        message:
+          'Webhook secret not configured.',
+      });
   }
 
-  const svix_id        = req.headers['svix-id'];
-  const svix_timestamp = req.headers['svix-timestamp'];
-  const svix_signature = req.headers['svix-signature'];
+  const svix_id =
+    req.headers['svix-id'];
 
-  if (!svix_id || !svix_timestamp || !svix_signature) {
-    return res.status(400).json({ message: 'Missing svix headers.' });
+  const svix_timestamp =
+    req.headers[
+      'svix-timestamp'
+    ];
+
+  const svix_signature =
+    req.headers[
+      'svix-signature'
+    ];
+
+  if (
+    !svix_id ||
+    !svix_timestamp ||
+    !svix_signature
+  ) {
+    return res
+      .status(400)
+      .json({
+        message:
+          'Missing svix headers.',
+      });
   }
 
   let payload;
+
   try {
-    const wh = new Webhook(WEBHOOK_SECRET);
-    payload = wh.verify(req.body, {
-      'svix-id':        svix_id,
-      'svix-timestamp': svix_timestamp,
-      'svix-signature': svix_signature,
-    });
+    const wh = new Webhook(
+      WEBHOOK_SECRET
+    );
+
+    payload = wh.verify(
+      req.body,
+      {
+        'svix-id': svix_id,
+
+        'svix-timestamp':
+          svix_timestamp,
+
+        'svix-signature':
+          svix_signature,
+      }
+    );
   } catch {
-    return res.status(400).json({ message: 'Invalid webhook signature.' });
+    return res
+      .status(400)
+      .json({
+        message:
+          'Invalid webhook signature.',
+      });
   }
 
-  const { type, data } = payload;
+  const { type, data } =
+    payload;
 
-  if (type === 'user.created' || type === 'user.updated') {
-    const email = data.email_addresses?.[0]?.email_address || '';
+  if (
+    type === 'user.created' ||
+    type === 'user.updated'
+  ) {
+    const email =
+      data.email_addresses?.[0]
+        ?.email_address || '';
+
     try {
-      await userService.upsertUserFromClerk({
-        clerkId:   data.id,
-        email,
-        firstName: data.first_name || '',
-        lastName:  data.last_name  || '',
-      });
+      if (
+        !userService.isAllowedEmail(
+          email
+        )
+      ) {
+        await clerkClient.users.deleteUser(
+          data.id
+        );
+
+        console.warn(
+          `Deleted unauthorized user: ${email}`
+        );
+
+        return res
+          .status(200)
+          .json({
+            deleted: true,
+          });
+      }
+
+      await userService.upsertUserFromClerk(
+        {
+          clerkId: data.id,
+
+          email,
+
+          firstName:
+            data.first_name ||
+            '',
+
+          lastName:
+            data.last_name ||
+            '',
+        }
+      );
     } catch (err) {
-      // Non-allowed domain — log but don't crash
-      console.warn(`Webhook skipped for ${email}: ${err.message}`);
+      console.error(
+        'Webhook Error:',
+        err.message
+      );
+
+      return res
+        .status(500)
+        .json({
+          message:
+            'Webhook processing failed.',
+        });
     }
   }
 
-  res.status(200).json({ received: true });
+  res.status(200).json({
+    received: true,
+  });
 };
 
-module.exports = { handleClerkWebhook };
+module.exports = {
+  handleClerkWebhook,
+};
