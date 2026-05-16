@@ -25,7 +25,7 @@ export default function AdminDashboard() {
   const loadPOCs = useCallback(async () => {
     setPocLoading(true);
     try { setPocs(await getAllPOCs(branchFilter)); } finally { setPocLoading(false); }
-  }, [branchFilter]);
+  }, [branchFilter,activeTab]);
 
   const loadUsers = useCallback(async () => {
     setUserLoading(true);
