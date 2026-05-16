@@ -6,6 +6,7 @@ const searchByName = async (
 ) => {
   const normalized =
     query
+      .replace(/\s+/g, '')
       .toLowerCase()
       .trim();
 
