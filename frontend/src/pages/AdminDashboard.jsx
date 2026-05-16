@@ -31,7 +31,7 @@ export default function AdminDashboard() {
     setUserLoading(true);
     try { setUsers(await getAllUsers()); } finally { setUserLoading(false); }
   }, []);
-  useEffect(() => { activeTab=== 'POC Directory' ? setBranchFilter('CSE') : setBranchFilter('') }, [activeTab]);
+  useEffect(() => { activeTab=== 'POC Directory' ? setBranchFilter("CSE") : setBranchFilter('') }, [activeTab]);
 
   useEffect(() => {loadPOCs(); }, [loadPOCs]);
   useEffect(() => { loadUsers(); }, [loadUsers]);
@@ -177,7 +177,7 @@ export default function AdminDashboard() {
                 {BRANCHES.map((b) => (
                   <button
                     key={b}
-                    onClick={() => setBranchFilter(b === branchFilter ? '' : b)}
+                    onClick={() => setBranchFilter(b)}
                     className={`text-xs px-3 py-1.5 rounded-lg font-medium border transition-all ${
                       branchFilter === b ? 'bg-navy text-white border-navy' : 'bg-white text-slate-600 border-slate-200 hover:border-navy/30'
                     }`}
