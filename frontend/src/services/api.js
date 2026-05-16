@@ -4,29 +4,30 @@ import {
   API_URL,
 } from '../config/constants';
 
-console.log(
-  'API_URL',
-  API_URL
-);
-
 const api = axios.create({
   baseURL: API_URL,
 });
 
-export const setAuthToken = (
-  token
+let getTokenFn = null;
+
+export const injectTokenGetter = (
+  fn
 ) => {
-  if (token) {
-    api.defaults.headers.common.Authorization =
-      `Bearer ${token}`;
-  } else {
-    delete api.defaults.headers.common
-      .Authorization;
-  }
+  getTokenFn = fn;
 };
 
 api.interceptors.request.use(
-  (config) => {
+  async (config) => {
+    if (getTokenFn) {
+      const token =
+        await getTokenFn();
+
+      if (token) {
+        config.headers.Authorization =
+          `Bearer ${token}`;
+      }
+    }
+
     return config;
   },
 
