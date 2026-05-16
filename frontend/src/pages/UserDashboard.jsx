@@ -20,7 +20,7 @@ export default function UserDashboard() {
             {user?.firstName} 👋
           </h1>
           <p className="text-white/40 font-body text-sm">
-            Check if a company is a registered Point of Contact for your placement season.
+            Check if a Company is a registered Point of Contact for our InternShip and Placement Season.
           </p>
         </div>
       </div>
