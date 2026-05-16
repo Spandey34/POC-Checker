@@ -2,12 +2,13 @@ const mongoose = require('mongoose');
 
 const BRANCHES = [
   'CSE',
+  'EE',
   'ECE',
   'MME',
   'ECM',
   'PIE',
-  'Mech',
-  'Civil',
+  'MECH',
+  'CIVIL',
 ];
 
 const generateAcronyms = (name) => {
