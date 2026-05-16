@@ -69,8 +69,8 @@ export default function POCForm({
     setSaving(true);
 
     try {
-      console.log('API_URL',API_URL);
       if (editing) {
+        console.log("Editinf Id: ", editing._id);
         await updatePOC(editing._id, payload);
 
         toast.success("POC updated");
