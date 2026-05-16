@@ -43,7 +43,7 @@ export default function UserDashboard() {
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           {[
             { icon: '🏢', title: 'POC Companies', desc: 'Companies officially registered as Points of Contact by TNP cell.' },
-            { icon: '🎓', title: 'Branch-wise', desc: 'POCs are mapped to specific branches: CSE, ECE, Mech, Civil, MME, PIE, ECM.' },
+            { icon: '🎓', title: 'Branch-wise', desc: 'POCs are mapped to specific branches: CSE, ECE, EE, Mech, Civil, MME, PIE, ECM.' },
             { icon: '🔒', title: 'Secure Access', desc: 'Only verified NIT JSR students and faculty can access this portal.' },
           ].map(({ icon, title, desc }) => (
             <div key={title} className="card p-5 animate-fade-in">

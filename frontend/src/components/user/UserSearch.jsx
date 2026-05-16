@@ -96,10 +96,6 @@ export default function UserSearch() {
         )}
       </form>
 
-      <p className="text-xs text-slate-400 mt-2 text-center">
-        Enter the company name.
-      </p>
-
       {state === 'done' &&
         result && (
           <div
