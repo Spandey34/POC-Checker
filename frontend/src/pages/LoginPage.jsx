@@ -2,6 +2,7 @@ import { SignIn, useUser } from '@clerk/clerk-react';
 import { Navigate } from 'react-router-dom';
 import { useDbUser } from '../context/UserContext';
 import LoadingSpinner from '../components/common/LoadingSpinner';
+import { BRANCHES } from '../config/constants';
 
 export default function LoginPage() {
   const { isLoaded, isSignedIn } = useUser();
@@ -33,15 +34,15 @@ export default function LoginPage() {
 
         <div>
           <h1 className="text-5xl font-display font-extrabold text-white leading-tight mb-4">
-            Know Your<br />
-            <span className="text-gold">Point of Contact</span>
+            Know Our<br />
+            <span className="text-gold">Point of Contacts</span>
           </h1>
           <p className="text-white/50 font-body text-lg max-w-sm">
             The official portal to verify placement POCs across all branches at NIT JSR.
           </p>
 
           <div className="mt-10 grid grid-cols-3 gap-4">
-            {['CSE', 'ECE', 'Mech', 'Civil', 'MME', 'PIE'].map((b) => (
+            {BRANCHES.map((b) => (
               <div key={b} className="bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-center">
                 <p className="text-white font-display font-bold text-sm">{b}</p>
               </div>
