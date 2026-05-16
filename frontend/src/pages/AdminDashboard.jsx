@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, act } from 'react';
 import Navbar from '../components/layout/Navbar';
 import POCTable from '../components/admin/POCTable';
 import UserTable from '../components/admin/UserTable';
@@ -25,12 +25,13 @@ export default function AdminDashboard() {
   const loadPOCs = useCallback(async () => {
     setPocLoading(true);
     try { setPocs(await getAllPOCs(branchFilter)); } finally { setPocLoading(false); }
-  }, [branchFilter,activeTab]);
+  }, [branchFilter]);
 
   const loadUsers = useCallback(async () => {
     setUserLoading(true);
     try { setUsers(await getAllUsers()); } finally { setUserLoading(false); }
   }, []);
+  useEffect(() => { setBranchFilter('') }, [activeTab]);
 
   useEffect(() => { loadPOCs(); }, [loadPOCs]);
   useEffect(() => { loadUsers(); }, [loadUsers]);
