@@ -53,7 +53,6 @@ const userSearch = async (
 
     res.json({
       found: true,
-      poc: result,
     });
   } catch (err) {
     next(err);
