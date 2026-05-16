@@ -6,17 +6,39 @@ const searchByName = async (
 ) => {
   const normalized =
     query
-      .toLowerCase()
       .replace(/\s+/g, '')
+      .toLowerCase()
       .trim();
 
   const result =
-    await POC.findOne({
-      nameLower:
-        normalized,
-    }).lean();
+    await POC.aggregate([
+      {
+        $addFields: {
+          compactName: {
+            $replaceAll: {
+              input:
+                '$nameLower',
+              find: ' ',
+              replacement:
+                '',
+            },
+          },
+        },
+      },
 
-  return result;
+      {
+        $match: {
+          compactName:
+            normalized,
+        },
+      },
+
+      {
+        $limit: 1,
+      },
+    ]);
+
+  return result[0] || null;
 };
 
 const adminSearch = async (
