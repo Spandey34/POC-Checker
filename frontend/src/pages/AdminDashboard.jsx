@@ -9,87 +9,62 @@ import LoadingSpinner from "../components/common/LoadingSpinner";
 import { getAllPOCs, getRecentPOCs } from "../services/pocService";
 import { getAllUsers } from "../services/userService";
 import { BRANCHES } from "../config/constants";
-import { useUser } from '@clerk/clerk-react';
+import { useUser } from "@clerk/clerk-react";
 
-const TABS = [
-  "Overview",
-  "POC Directory",
-  "Recently Added",
-  "Users",
-];
+const TABS = ["Overview", "POC Directory", "Recently Added", "Users"];
 
 export default function AdminDashboard() {
   const { user } = useUser();
 
-  const [activeTab, setActiveTab] =
-    useState("Overview");
+  const [activeTab, setActiveTab] = useState("Overview");
 
   const [pocs, setPocs] = useState([]);
   const [users, setUsers] = useState([]);
-  const [recentPOCs, setRecentPOCs] =
-    useState([]);
+  const [recentPOCs, setRecentPOCs] = useState([]);
 
-  const [branchFilter, setBranchFilter] =
-    useState("");
+  const [branchFilter, setBranchFilter] = useState("");
 
-  const [pocLoading, setPocLoading] =
-    useState(true);
+  const [pocLoading, setPocLoading] = useState(true);
 
-  const [userLoading, setUserLoading] =
-    useState(true);
+  const [userLoading, setUserLoading] = useState(true);
 
-  const [showForm, setShowForm] =
-    useState(false);
+  const [showForm, setShowForm] = useState(false);
 
-  const [editingPOC, setEditingPOC] =
-    useState(null);
+  const [editingPOC, setEditingPOC] = useState(null);
 
-  const loadPOCs = useCallback(
-    async (branch = "") => {
-      setPocLoading(true);
+  const loadPOCs = useCallback(async (branch = "") => {
+    setPocLoading(true);
 
-      try {
-        const data = await getAllPOCs(
-          branch
-        );
+    try {
+      const data = await getAllPOCs(branch);
 
-        setPocs(data);
-      } finally {
-        setPocLoading(false);
-      }
-    },
-    []
-  );
+      setPocs(data);
+    } finally {
+      setPocLoading(false);
+    }
+  }, []);
 
-  const loadRecentPOCs = useCallback(
-    async () => {
-      try {
-        const data =
-          await getRecentPOCs();
+  const loadRecentPOCs = useCallback(async () => {
+    try {
+      const data = await getRecentPOCs();
 
-        setRecentPOCs(data);
-      } catch (err) {
-        console.error(err);
-      }
-    },
-    []
-  );
+      setRecentPOCs(data);
+    } catch (err) {
+      console.error(err);
+    }
+  }, []);
 
-  const loadUsers = useCallback(
-    async () => {
-      setUserLoading(true);
+  const loadUsers = useCallback(async () => {
+    setUserLoading(true);
 
-      try {
-        const data =
-          await getAllUsers();
+    try {
+      const data = await getAllUsers();
 
-        setUsers(data);
-      } finally {
-        setUserLoading(false);
-      }
-    },
-    []
-  );
+      setUsers(data);
+    } finally {
+      setUserLoading(false);
+    }
+  }, []);
 
   useEffect(() => {
     if (activeTab !== "POC Directory") {
@@ -109,11 +84,7 @@ export default function AdminDashboard() {
         loadPOCs("CSE");
       }
     }
-  }, [
-    activeTab,
-    branchFilter,
-    loadPOCs,
-  ]);
+  }, [activeTab, branchFilter, loadPOCs]);
 
   useEffect(() => {
     if (activeTab === "Users") {
@@ -122,9 +93,7 @@ export default function AdminDashboard() {
   }, [activeTab, loadUsers]);
 
   useEffect(() => {
-    if (
-      activeTab === "Recently Added"
-    ) {
+    if (activeTab === "Recently Added") {
       loadRecentPOCs();
     }
   }, [activeTab, loadRecentPOCs]);
@@ -142,22 +111,14 @@ export default function AdminDashboard() {
   };
 
   // Stats
-  const verifiedCount = users.filter(
-    (u) => u.isVerified
-  ).length;
+  const verifiedCount = users.filter((u) => u.isVerified).length;
 
-  const pendingCount = users.filter(
-    (u) => !u.isVerified
-  ).length;
+  const pendingCount = users.filter((u) => !u.isVerified).length;
 
-  const fiveMinsAgo =
-    Date.now() - 5 * 60 * 1000;
+  const fiveMinsAgo = Date.now() - 5 * 60 * 1000;
 
   const onlineCount = users.filter(
-    (u) =>
-      u.lastVisit &&
-      new Date(u.lastVisit) >
-        fiveMinsAgo
+    (u) => u.lastVisit && new Date(u.lastVisit) > fiveMinsAgo,
   ).length;
 
   return (
@@ -172,12 +133,11 @@ export default function AdminDashboard() {
           </h1>
 
           <p className="text-white/40 text-sm font-body mb-6">
-            Manage POCs, verify users,
-            and monitor portal activity.
+            Manage POCs, verify users, and monitor portal activity.
           </p>
 
           {/* Stat cards */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-0">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-0">
             {[
               {
                 label: "Total POCs",
@@ -203,59 +163,50 @@ export default function AdminDashboard() {
                 icon: "🟢",
                 color: "bg-teal-500",
               },
-            ].map(
-              ({
-                label,
-                value,
-                icon,
-                color,
-              }) => (
+            ].map(({ label, value, icon, color }) => (
+              <div
+                key={label}
+                className="bg-white/5 border border-white/10 rounded-2xl p-4 animate-fade-in"
+              >
                 <div
-                  key={label}
-                  className="bg-white/5 border border-white/10 rounded-2xl p-4 animate-fade-in"
+                  className={`w-8 h-8 rounded-lg ${color}/20 flex items-center justify-center mb-2 text-sm`}
                 >
-                  <div
-                    className={`w-8 h-8 rounded-lg ${color}/20 flex items-center justify-center mb-2 text-sm`}
-                  >
-                    {icon}
-                  </div>
-
-                  <p className="text-2xl font-display font-extrabold text-white">
-                    {value}
-                  </p>
-
-                  <p className="text-white/40 text-xs font-body">
-                    {label}
-                  </p>
+                  {icon}
                 </div>
-              )
-            )}
+
+                <p className="text-2xl font-display font-extrabold text-white">
+                  {value}
+                </p>
+
+                <p className="text-white/40 text-xs font-body">{label}</p>
+              </div>
+            ))}
           </div>
 
           {/* Tabs */}
-          <div className="flex gap-1 mt-6">
-            {TABS.map((tab) => (
-              <button
-                key={tab}
-                onClick={() =>
-                  setActiveTab(tab)
-                }
-                className={`px-5 py-2.5 rounded-t-xl text-sm font-body font-medium transition-all relative ${
-                  activeTab === tab
-                    ? "bg-slate-50 text-navy shadow-sm"
-                    : "text-white/50 hover:text-white/80 hover:bg-white/5"
-                }`}
-              >
-                {tab}
+          {/* Tabs */}
+          <div className="mt-6 overflow-x-auto scrollbar-hide">
+            <div className="flex min-w-max gap-2 pb-2">
+              {TABS.map((tab) => (
+                <button
+                  key={tab}
+                  onClick={() => setActiveTab(tab)}
+                  className={`shrink-0 px-4 sm:px-5 py-2.5 rounded-xl text-xs sm:text-sm font-body font-medium transition-all relative whitespace-nowrap ${
+                    activeTab === tab
+                      ? "bg-slate-50 text-navy shadow-sm"
+                      : "text-white/60 hover:text-white hover:bg-white/5"
+                  }`}
+                >
+                  {tab}
 
-                {tab === "Users" &&
-                  pendingCount > 0 && (
+                  {tab === "Users" && pendingCount > 0 && (
                     <span className="ml-1.5 bg-amber-400 text-navy text-[10px] font-bold px-1.5 py-0.5 rounded-full">
                       {pendingCount}
                     </span>
                   )}
-              </button>
-            ))}
+                </button>
+              ))}
+            </div>
           </div>
         </div>
       </div>
@@ -276,28 +227,15 @@ export default function AdminDashboard() {
 
               <div className="space-y-3">
                 {BRANCHES.map((b) => {
-                  const count =
-                    pocs.filter(
-                      (p) =>
-                        p.branch == b
-                    ).length;
+                  const count = pocs.filter((p) => p.branch == b).length;
 
                   const pct = pocs.length
-                    ? Math.round(
-                        (count /
-                          pocs.length) *
-                          100
-                      )
+                    ? Math.round((count / pocs.length) * 100)
                     : 0;
 
                   return (
-                    <div
-                      key={b}
-                      className="flex items-center gap-3"
-                    >
-                      <BranchBadge
-                        branch={b}
-                      />
+                    <div key={b} className="flex items-center gap-3">
+                      <BranchBadge branch={b} />
 
                       <div className="flex-1 h-2 bg-slate-100 rounded-full overflow-hidden">
                         <div
@@ -322,19 +260,14 @@ export default function AdminDashboard() {
               <div className="card p-6 border-amber-200 lg:col-span-2">
                 <div className="flex items-center justify-between mb-4">
                   <h3 className="font-display font-bold text-navy">
-                    ⏳ Pending
-                    Verifications
+                    ⏳ Pending Verifications
                     <span className="ml-2 bg-amber-100 text-amber-700 text-xs font-semibold px-2 py-0.5 rounded-full">
                       {pendingCount}
                     </span>
                   </h3>
 
                   <button
-                    onClick={() =>
-                      setActiveTab(
-                        "Users"
-                      )
-                    }
+                    onClick={() => setActiveTab("Users")}
                     className="text-xs text-navy font-medium hover:underline"
                   >
                     View all users →
@@ -343,10 +276,7 @@ export default function AdminDashboard() {
 
                 <div className="space-y-2">
                   {users
-                    .filter(
-                      (u) =>
-                        !u.isVerified
-                    )
+                    .filter((u) => !u.isVerified)
                     .slice(0, 5)
                     .map((u) => (
                       <div
@@ -355,20 +285,14 @@ export default function AdminDashboard() {
                       >
                         <div>
                           <p className="text-sm font-semibold text-navy font-body">
-                            {u.firstName}{" "}
-                            {u.lastName}
+                            {u.firstName} {u.lastName}
                           </p>
 
-                          <p className="text-xs text-slate-400">
-                            {u.email}
-                          </p>
+                          <p className="text-xs text-slate-400">{u.email}</p>
                         </div>
 
                         <span className="text-xs text-amber-600 font-body">
-                          Joined{" "}
-                          {new Date(
-                            u.createdAt
-                          ).toLocaleDateString()}
+                          Joined {new Date(u.createdAt).toLocaleDateString()}
                         </span>
                       </div>
                     ))}
@@ -379,25 +303,21 @@ export default function AdminDashboard() {
         )}
 
         {/* ── POC DIRECTORY ── */}
-        {activeTab ===
-          "POC Directory" && (
+        {activeTab === "POC Directory" && (
           <div className="space-y-5">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
               {/* Branch filter */}
-              <div className="flex flex-wrap gap-2 items-center">
+              <div className="flex overflow-x-auto scrollbar-hide gap-2 items-center pb-2">
                 {BRANCHES.map((b) => (
                   <button
                     key={b}
                     onClick={() => {
-                      setBranchFilter(
-                        b
-                      );
+                      setBranchFilter(b);
 
                       loadPOCs(b);
                     }}
                     className={`text-xs px-3 py-1.5 rounded-lg font-medium border transition-all ${
-                      branchFilter ===
-                      b
+                      branchFilter === b
                         ? "bg-navy text-white border-navy"
                         : "bg-white text-slate-600 border-slate-200 hover:border-navy/30"
                     }`}
@@ -408,9 +328,7 @@ export default function AdminDashboard() {
               </div>
 
               <button
-                onClick={() =>
-                  setShowForm(true)
-                }
+                onClick={() => setShowForm(true)}
                 className="btn-primary text-sm py-2 whitespace-nowrap"
               >
                 + Add POC
@@ -423,25 +341,16 @@ export default function AdminDashboard() {
               <div className="card p-0 overflow-hidden">
                 <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
                   <h3 className="font-display font-semibold text-navy text-sm">
-                    {branchFilter
-                      ? `${branchFilter} POCs`
-                      : "All POCs"}{" "}
-                    — {pocs.length}{" "}
-                    companies
+                    {branchFilter ? `${branchFilter} POCs` : "All POCs"} —{" "}
+                    {pocs.length} companies
                   </h3>
                 </div>
 
                 <div className="p-4">
                   <POCTable
                     pocs={pocs}
-                    onEdit={
-                      handleEdit
-                    }
-                    onRefresh={() =>
-                      loadPOCs(
-                        branchFilter
-                      )
-                    }
+                    onEdit={handleEdit}
+                    onRefresh={() => loadPOCs(branchFilter)}
                     showAddedBy
                     restrictActions
                     currentUser={user}
@@ -453,8 +362,7 @@ export default function AdminDashboard() {
         )}
 
         {/* ── RECENTLY ADDED ── */}
-        {activeTab ===
-          "Recently Added" && (
+        {activeTab === "Recently Added" && (
           <div className="space-y-5">
             <div className="flex items-center justify-between">
               <h3 className="font-display font-semibold text-navy">
@@ -462,10 +370,7 @@ export default function AdminDashboard() {
               </h3>
 
               <span className="text-sm text-slate-500">
-                {
-                  recentPOCs.length
-                }{" "}
-                recently added
+                {recentPOCs.length} recently added
               </span>
             </div>
 
@@ -473,12 +378,8 @@ export default function AdminDashboard() {
               <div className="p-4">
                 <POCTable
                   pocs={recentPOCs}
-                  onEdit={
-                    handleEdit
-                  }
-                  onRefresh={
-                    loadRecentPOCs
-                  }
+                  onEdit={handleEdit}
+                  onRefresh={loadRecentPOCs}
                   showAddedBy
                   restrictActions
                   currentUser={user}
@@ -493,19 +394,16 @@ export default function AdminDashboard() {
           <div className="space-y-5">
             <div className="flex items-center gap-4">
               <h3 className="font-display font-semibold text-navy">
-                Registered Users —{" "}
-                {users.length} total
+                Registered Users — {users.length} total
               </h3>
 
               <div className="flex gap-2 text-xs text-slate-500">
                 <span className="bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full font-medium">
-                  {verifiedCount}{" "}
-                  verified
+                  {verifiedCount} verified
                 </span>
 
                 <span className="bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full font-medium">
-                  {pendingCount}{" "}
-                  pending
+                  {pendingCount} pending
                 </span>
               </div>
             </div>
@@ -517,9 +415,7 @@ export default function AdminDashboard() {
                 <div className="p-4">
                   <UserTable
                     users={users}
-                    onRefresh={
-                      loadUsers
-                    }
+                    onRefresh={loadUsers}
                     currentUser={user}
                   />
                 </div>
