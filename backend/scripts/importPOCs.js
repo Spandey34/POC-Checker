@@ -115,7 +115,9 @@ const run = async () => {
           branch,
 
           addedBy:
-            'bulk-import',
+  new mongoose.Types.ObjectId(
+    '6a088185d5fd8db9c21499a3'
+  ),
         });
       }
     }
