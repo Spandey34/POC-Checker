@@ -48,7 +48,7 @@ export default function App() {
           </Route>
 
           <Route path="/" element={<Navigate to="/dashboard" replace />} />
-          <Route path="*" element={<MaintenancePage />} />
+          <Route path="*" element={<NotFoundPage />} />
         </Routes>
       </UserProvider>
     </BrowserRouter>
