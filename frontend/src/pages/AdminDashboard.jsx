@@ -67,7 +67,7 @@ export default function AdminDashboard() {
   }, []);
 
   useEffect(() => {
-    if (activeTab !== "POC Directory") {
+    if (activeTab !== "POCs") {
       loadPOCs("");
 
       loadUsers();
@@ -77,7 +77,7 @@ export default function AdminDashboard() {
   }, [activeTab, loadPOCs, loadUsers]);
 
   useEffect(() => {
-    if (activeTab === "POC Directory") {
+    if (activeTab === "POCs") {
       if (!branchFilter) {
         setBranchFilter("CSE");
 
@@ -214,7 +214,7 @@ export default function AdminDashboard() {
       {/* Tab content */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 animate-fade-in">
         {/* ── OVERVIEW ── */}
-        {activeTab === "Overview" && (
+        {activeTab === "Search" && (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* Admin search */}
             <AdminSearch />
@@ -303,7 +303,7 @@ export default function AdminDashboard() {
         )}
 
         {/* ── POC DIRECTORY ── */}
-        {activeTab === "POC Directory" && (
+        {activeTab === "POCs" && (
           <div className="space-y-5">
             <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
               {/* Branch filter */}
