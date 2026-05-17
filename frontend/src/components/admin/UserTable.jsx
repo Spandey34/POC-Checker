@@ -96,7 +96,7 @@ export default function UserTable({
           code
         ];
 
-        console.log(u.email, branch, currentUserBranch);
+        console.log(u.email, branch, currentUser);
 
       return (
         branch ===
