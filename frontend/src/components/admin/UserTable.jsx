@@ -62,7 +62,8 @@ export default function UserTable({
     useState(null);
 
   const currentUserCode =
-    currentUser?.email
+    currentUser?.primaryEmailAddress
+    ?.emailAddress
       ?.slice(6, 8)
       ?.toLowerCase();
 
@@ -96,7 +97,6 @@ export default function UserTable({
           code
         ];
 
-        console.log(u.email, branch, currentUser);
 
       return (
         branch ===
