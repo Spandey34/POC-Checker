@@ -1,5 +1,6 @@
 const pocService = require('../services/pocService');
 const { BRANCHES } = require('../models/POC');
+const User = require('../models/User');
 
 const getBranches = (_req, res) =>
   res.json(BRANCHES);
@@ -122,13 +123,29 @@ const addPOC = async (
         });
     }
 
+    const clerkId =
+      req.auth().userId;
+
+    const user =
+      await User.findOne({
+        clerkId,
+      });
+
+    if (!user) {
+      return res
+        .status(404)
+        .json({
+          message:
+            'User not found.',
+        });
+    }
+
     const poc =
       await pocService.addPOC({
         name,
         aliases,
         branch,
-        addedBy:
-          req.auth().userId,
+        addedBy: user._id,
       });
 
     res.status(201).json(poc);
