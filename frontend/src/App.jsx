@@ -9,6 +9,22 @@ import AdminDashboard  from './pages/AdminDashboard';
 import UserDashboard   from './pages/UserDashboard';
 import NotFoundPage    from './pages/NotFoundPage';
 
+function MaintenancePage() {
+  return (
+    <div className="h-screen w-full flex items-center justify-center bg-black text-white">
+      <div className="text-center">
+        <h1 className="text-5xl font-bold mb-4">
+          Kaam Chal rha bhai...🚧
+        </h1>
+
+        <p className="text-lg text-gray-300">
+          Thodi der baad aao...
+        </p>
+      </div>
+    </div>
+  );
+}
+
 export default function App() {
   return (
     <BrowserRouter>
@@ -20,21 +36,21 @@ export default function App() {
           }}
         />
         <Routes>
-          <Route path="/login" element={<LoginPage />} />
+          {/* <Route path="/login" element={<LoginPage />} />
           <Route path="/pending" element={<PendingVerificationPage />} />
 
-          {/* Admin routes */}
           <Route element={<AdminRoute />}>
             <Route path="/admin" element={<AdminDashboard />} />
           </Route>
 
-          {/* Verified user routes */}
           <Route element={<ProtectedRoute />}>
             <Route path="/dashboard" element={<UserDashboard />} />
           </Route>
 
           <Route path="/" element={<Navigate to="/dashboard" replace />} />
-          <Route path="*" element={<NotFoundPage />} />
+          <Route path="*" element={<NotFoundPage />} /> */}
+
+          <Route path="*" element={<MaintenancePage />} />
         </Routes>
       </UserProvider>
     </BrowserRouter>
