@@ -9,7 +9,7 @@ import LoadingSpinner from "../components/common/LoadingSpinner";
 import { getAllPOCs, getRecentPOCs } from "../services/pocService";
 import { getAllUsers } from "../services/userService";
 import { BRANCHES } from "../config/constants";
-import { useUser } from "../context/UserContext";
+import { useUser } from '@clerk/clerk-react';
 
 const TABS = [
   "Overview",
