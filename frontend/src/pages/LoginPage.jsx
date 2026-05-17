@@ -77,7 +77,7 @@ export default function LoginPage() {
                 footerAction: 'font-body',
               },
             }}
-            redirectUrl="/"
+            forceRedirectUrl="/"
           />
 
           <p className="text-white/40 text-xs text-center mt-4 font-body">
