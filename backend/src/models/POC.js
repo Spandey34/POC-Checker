@@ -59,7 +59,7 @@ const POCSchema = new mongoose.Schema(
     },
 
     addedBy: {
-      type: mongoose.types.ObjectId,
+      type: mongoose.Schema.Types.ObjectId,
       ref: 'User',
       required: true,
     },
