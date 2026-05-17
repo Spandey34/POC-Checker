@@ -194,10 +194,41 @@ const getAllPOCs = async (
       ? { branch }
       : {};
 
-  return POC.find(filter)
+  const pocs = await POC.find(
+    filter
+  )
+    .populate(
+      'addedBy',
+      'email phoneNumber firstName lastName'
+    )
     .sort({ name: 1 })
     .lean();
+
+  return pocs.map((poc) => ({
+    ...poc,
+    userId: poc.addedBy,
+  }));
 };
+
+const getRecentPOCs =
+  async () => {
+    const pocs =
+      await POC.find({})
+        .populate(
+          'addedBy',
+          'email phoneNumber firstName lastName'
+        )
+        .sort({
+          createdAt: -1,
+        })
+        .limit(20)
+        .lean();
+
+    return pocs.map((poc) => ({
+      ...poc,
+      userId: poc.addedBy,
+    }));
+  };
 
 const addPOC = async ({
   name,
@@ -283,6 +314,7 @@ module.exports = {
   searchByName,
   adminSearch,
   getAllPOCs,
+  getRecentPOCs,
   addPOC,
   updatePOC,
   deletePOC,

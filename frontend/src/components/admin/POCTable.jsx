@@ -8,6 +8,9 @@ export default function POCTable({
   pocs,
   onEdit,
   onRefresh,
+  showAddedBy = false,
+  restrictActions = false,
+  currentUser = null,
 }) {
   const [deleting, setDeleting] =
     useState(null);
@@ -61,6 +64,12 @@ export default function POCTable({
                 Branch
               </th>
 
+              {showAddedBy && (
+                <th className="px-4 py-3 font-display font-semibold text-navy text-xs uppercase tracking-wider">
+                  Added By
+                </th>
+              )}
+
               <th className="px-4 py-3 font-display font-semibold text-navy text-xs uppercase tracking-wider hidden md:table-cell">
                 Aliases
               </th>
@@ -72,75 +81,107 @@ export default function POCTable({
           </thead>
 
           <tbody className="divide-y divide-slate-100">
-            {pocs.map((poc) => (
-              <tr
-                key={poc._id}
-                className="hover:bg-slate-50/50 transition-colors group"
-              >
-                <td className="px-4 py-3">
-                  <p className="font-body font-semibold text-navy">
-                    {poc.name}
-                  </p>
+            {pocs.map((poc) => {
+              const canModify =
+                !restrictActions ||
+                poc.userId?._id ===
+                  currentUser?._id;
 
-                  <p className="text-xs text-slate-400 mt-0.5">
-                    Added{' '}
-                    {new Date(
-                      poc.createdAt
-                    ).toLocaleDateString()}
-                  </p>
-                </td>
+              return (
+                <tr
+                  key={poc._id}
+                  className="hover:bg-slate-50/50 transition-colors group"
+                >
+                  <td className="px-4 py-3">
+                    <p className="font-body font-semibold text-navy">
+                      {poc.name}
+                    </p>
 
-                <td className="px-4 py-3">
-                  <BranchBadge
-                    branch={poc.branch}
-                  />
-                </td>
+                    <p className="text-xs text-slate-400 mt-0.5">
+                      Added{' '}
+                      {new Date(
+                        poc.createdAt
+                      ).toLocaleDateString()}
+                    </p>
+                  </td>
 
-                <td className="px-4 py-3 hidden md:table-cell">
-                  {poc.aliases.length >
-                  0 ? (
-                    <div className="flex flex-wrap gap-1">
-                      {poc.aliases.map(
-                        (a) => (
-                          <span
-                            key={a}
-                            className="tag bg-slate-100 text-slate-600 font-mono text-[11px]"
+                  <td className="px-4 py-3">
+                    <BranchBadge
+                      branch={poc.branch}
+                    />
+                  </td>
+
+                  {showAddedBy && (
+                    <td className="px-4 py-3">
+                      <div className="space-y-1">
+                        <p className="text-sm font-medium text-navy">
+                          {poc.userId?.email ||
+                            'Unknown'}
+                        </p>
+
+                        <p className="text-xs text-slate-400">
+                          {poc.userId
+                            ?.phoneNumber ||
+                            'No phone'}
+                        </p>
+                      </div>
+                    </td>
+                  )}
+
+                  <td className="px-4 py-3 hidden md:table-cell">
+                    {poc.aliases?.length >
+                    0 ? (
+                      <div className="flex flex-wrap gap-1">
+                        {poc.aliases.map(
+                          (a) => (
+                            <span
+                              key={a}
+                              className="tag bg-slate-100 text-slate-600 font-mono text-[11px]"
+                            >
+                              {a}
+                            </span>
+                          )
+                        )}
+                      </div>
+                    ) : (
+                      <span className="text-slate-300">
+                        —
+                      </span>
+                    )}
+                  </td>
+
+                  <td className="px-4 py-3">
+                    <div className="flex gap-2 opacity-70 group-hover:opacity-100 transition-opacity">
+                      {canModify ? (
+                        <>
+                          <button
+                            onClick={() =>
+                              onEdit(poc)
+                            }
+                            className="text-xs px-3 py-1.5 rounded-lg bg-navy/5 text-navy hover:bg-navy/10 font-medium transition-colors"
                           >
-                            {a}
-                          </span>
-                        )
+                            Edit
+                          </button>
+
+                          <button
+                            onClick={() =>
+                              setDeleting(poc)
+                            }
+                            className="text-xs px-3 py-1.5 rounded-lg bg-red-50 text-red-600 hover:bg-red-100 font-medium transition-colors"
+                          >
+                            Remove
+                          </button>
+                        </>
+                      ) : (
+                        <span className="text-xs text-slate-300">
+                          Not owner
+                        </span>
                       )}
                     </div>
-                  ) : (
-                    <span className="text-slate-300">
-                      —
-                    </span>
-                  )}
-                </td>
-
-                <td className="px-4 py-3">
-                  <div className="flex gap-2 opacity-70 group-hover:opacity-100 transition-opacity">
-                    <button
-                      onClick={() =>
-                        onEdit(poc)
-                      }
-                      className="text-xs px-3 py-1.5 rounded-lg bg-navy/5 text-navy hover:bg-navy/10 font-medium transition-colors"
-                    >
-                      Edit
-                    </button>
-
-                    <button
-                      onClick={() =>
-                        setDeleting(poc)
-                      }
-                      className="text-xs px-3 py-1.5 rounded-lg bg-red-50 text-red-600 hover:bg-red-100 font-medium transition-colors"
-                    >
-                      Remove
-                    </button>
-                  </div>
-                </td>
-              </tr>
-            ))}
+                  </td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       </div>

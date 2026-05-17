@@ -36,21 +36,21 @@ export default function App() {
           }}
         />
         <Routes>
-          {/* <Route path="/login" element={<LoginPage />} />
+          <Route path="/login" element={<LoginPage />} />
           <Route path="/pending" element={<PendingVerificationPage />} />
 
+          {/* Admin routes */}
           <Route element={<AdminRoute />}>
             <Route path="/admin" element={<AdminDashboard />} />
           </Route>
 
+          {/* Verified user routes */}
           <Route element={<ProtectedRoute />}>
             <Route path="/dashboard" element={<UserDashboard />} />
           </Route>
 
           <Route path="/" element={<Navigate to="/dashboard" replace />} />
-          <Route path="*" element={<NotFoundPage />} /> */}
-
-          <Route path="*" element={<MaintenancePage />} />
+          <Route path="*" element={<NotFoundPage />} />
         </Routes>
       </UserProvider>
     </BrowserRouter>

@@ -9,10 +9,17 @@ export const adminSearch = (q) =>
 export const getAllPOCs = (branch) =>
   api.get('/pocs', { params: branch ? { branch } : {} }).then((r) => r.data);
 
-export const getBranches = () => api.get('/pocs/branches').then((r) => r.data);
+export const getRecentPOCs = () =>
+  api.get('/pocs/recent').then((r) => r.data);
 
-export const addPOC = (data) => api.post('/pocs', data).then((r) => r.data);
+export const getBranches = () =>
+  api.get('/pocs/branches').then((r) => r.data);
 
-export const updatePOC = (id, data) => api.put(`/pocs/${id}`, data).then((r) => r.data);
+export const addPOC = (data) =>
+  api.post('/pocs', data).then((r) => r.data);
 
-export const deletePOC = (id) => api.delete(`/pocs/${id}`).then((r) => r.data);
+export const updatePOC = (id, data) =>
+  api.put(`/pocs/${id}`, data).then((r) => r.data);
+
+export const deletePOC = (id) =>
+  api.delete(`/pocs/${id}`).then((r) => r.data);

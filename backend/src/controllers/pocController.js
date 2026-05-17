@@ -23,6 +23,22 @@ const getAll = async (
   }
 };
 
+const getRecentPOCs =
+  async (
+    req,
+    res,
+    next
+  ) => {
+    try {
+      const pocs =
+        await pocService.getRecentPOCs();
+
+      res.json(pocs);
+    } catch (err) {
+      next(err);
+    }
+  };
+
 const userSearch = async (
   req,
   res,
@@ -173,6 +189,7 @@ const deletePOC = async (
 module.exports = {
   getBranches,
   getAll,
+  getRecentPOCs,
   userSearch,
   adminSearch,
   addPOC,
