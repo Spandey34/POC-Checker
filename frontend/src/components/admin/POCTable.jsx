@@ -11,7 +11,6 @@ export default function POCTable({
   showAddedBy = false,
   currentUser = null,
 }) {
-  console.log(pocs[0].userId,currentUser._id);
   const [deleting, setDeleting] =
     useState(null);
 
@@ -82,6 +81,7 @@ export default function POCTable({
 
           <tbody className="divide-y divide-slate-100">
             {pocs.map((poc) => {
+              console.log(poc.userId, currentUser._id);
               const canModify =
                 poc.userId?.clerkId !==undefined &&
                 poc.userId?.clerkId ===
