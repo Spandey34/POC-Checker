@@ -82,7 +82,7 @@ export default function POCTable({
           <tbody className="divide-y divide-slate-100">
             {pocs.map((poc) => {
               const canModify =
-                poc.userId?.clerkID ===
+                poc.userId?.clerkId ===
                   currentUser?._id;
 
               return (

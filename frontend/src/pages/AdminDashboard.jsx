@@ -11,7 +11,7 @@ import { getAllUsers } from "../services/userService";
 import { BRANCHES } from "../config/constants";
 import { useUser } from "@clerk/clerk-react";
 
-const TABS = ["Overview", "POC Directory", "Recently Added", "Users"];
+const TABS = ["Search", "POCs", "Recently Added", "Users"];
 
 export default function AdminDashboard() {
   const { user } = useUser();
