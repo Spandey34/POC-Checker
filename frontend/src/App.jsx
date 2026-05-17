@@ -1,21 +1,25 @@
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
-import { Toaster } from "react-hot-toast";
-import { UserProvider } from "./context/UserContext";
-import ProtectedRoute from "./routes/ProtectedRoute";
-import AdminRoute from "./routes/AdminRoute";
-import LoginPage from "./pages/LoginPage";
-import PendingVerificationPage from "./pages/PendingVerificationPage";
-import AdminDashboard from "./pages/AdminDashboard";
-import UserDashboard from "./pages/UserDashboard";
-import NotFoundPage from "./pages/NotFoundPage";
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { Toaster } from 'react-hot-toast';
+import { UserProvider } from './context/UserContext';
+import ProtectedRoute  from './routes/ProtectedRoute';
+import AdminRoute      from './routes/AdminRoute';
+import LoginPage               from './pages/LoginPage';
+import PendingVerificationPage from './pages/PendingVerificationPage';
+import AdminDashboard  from './pages/AdminDashboard';
+import UserDashboard   from './pages/UserDashboard';
+import NotFoundPage    from './pages/NotFoundPage';
 
 function MaintenancePage() {
   return (
     <div className="h-screen w-full flex items-center justify-center bg-black text-white">
       <div className="text-center">
-        <h1 className="text-5xl font-bold mb-4">Kaam Chal rha bhai...🚧</h1>
+        <h1 className="text-5xl font-bold mb-4">
+          Kaam Chal rha bhai...🚧
+        </h1>
 
-        <p className="text-lg text-gray-300">Thodi der baad aao...</p>
+        <p className="text-lg text-gray-300">
+          Thodi der baad aao...
+        </p>
       </div>
     </div>
   );
@@ -28,7 +32,7 @@ export default function App() {
         <Toaster
           position="top-right"
           toastOptions={{
-            style: { fontFamily: "DM Sans, sans-serif", fontSize: "14px" },
+            style: { fontFamily: 'DM Sans, sans-serif', fontSize: '14px' },
           }}
         />
         <Routes>
@@ -44,9 +48,7 @@ export default function App() {
           </Route>
 
           <Route path="/" element={<Navigate to="/dashboard" replace />} />
-          <Route path="*" element={<Navigate to="/" replace />} />
-
-          {/* <Route path="*" element={<MaintenancePage />} /> */}
+          <Route path="*" element={<NotFoundPage />} />
         </Routes>
       </UserProvider>
     </BrowserRouter>
