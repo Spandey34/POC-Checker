@@ -11,6 +11,7 @@ export default function POCTable({
   showAddedBy = false,
   currentUser = null,
 }) {
+  console.log(pocs[0].userId,currentUser._id);
   const [deleting, setDeleting] =
     useState(null);
 
