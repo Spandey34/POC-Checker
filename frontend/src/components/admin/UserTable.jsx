@@ -96,13 +96,14 @@ export default function UserTable({
           code
         ];
 
+        console.log(u.email, branch, currentUserBranch);
+
       return (
         branch ===
         currentUserBranch
       );
     });
 
-    console.log(users);
 
   const handleToggle = async (
     user
