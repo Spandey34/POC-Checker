@@ -48,7 +48,6 @@ export default function POCTable({
       </div>
     );
   }
-  console.log(pocs[0].userId, currentUser?._id);
 
   return (
     <>
@@ -81,11 +80,13 @@ export default function POCTable({
           </thead>
 
           <tbody className="divide-y divide-slate-100">
-            {pocs.map((poc) => {
+            {pocs.map((idx,poc) => {
               const canModify =
                 poc.userId?.clerkId ===
                   currentUser?._id;
-                  
+                 if(idx==0) {
+                  console.log(poc.userId, currentUser?._id, canModify);
+                 }
               return (
                 <tr
                   key={poc._id}
