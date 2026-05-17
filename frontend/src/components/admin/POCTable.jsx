@@ -9,7 +9,6 @@ export default function POCTable({
   onEdit,
   onRefresh,
   showAddedBy = false,
-  restrictActions = false,
   currentUser = null,
 }) {
   const [deleting, setDeleting] =
@@ -83,7 +82,6 @@ export default function POCTable({
           <tbody className="divide-y divide-slate-100">
             {pocs.map((poc) => {
               const canModify =
-                !restrictActions ||
                 poc.userId?.clerkID ===
                   currentUser?._id;
 

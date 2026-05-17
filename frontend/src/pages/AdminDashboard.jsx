@@ -352,7 +352,6 @@ export default function AdminDashboard() {
                     onEdit={handleEdit}
                     onRefresh={() => loadPOCs(branchFilter)}
                     showAddedBy
-                    restrictActions
                     currentUser={user}
                   />
                 </div>
