@@ -115,14 +115,14 @@ export default function POCTable({
                     <td className="px-4 py-3">
                       <div className="space-y-1">
                         <p className="text-sm font-medium text-navy">
-                          {poc.userId?.email ||
-                            'Unknown'}
+                          {poc.userId?.firstName ||
+                            'N/A'}
                         </p>
 
                         <p className="text-xs text-slate-400">
                           {poc.userId
-                            ?.phoneNumber ||
-                            'No phone'}
+                            ?.email ||
+                            'N/A'}
                         </p>
                       </div>
                     </td>

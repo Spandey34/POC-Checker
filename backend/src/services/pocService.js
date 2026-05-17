@@ -1,6 +1,10 @@
 const POC =
   require('../models/POC');
 
+const mongoose =
+  require('mongoose');
+
+
 const searchByName = async (
   query
 ) => {
@@ -212,8 +216,17 @@ const getAllPOCs = async (
 
 const getRecentPOCs =
   async () => {
+    const excludedUserId =
+      new mongoose.Types.ObjectId(
+        '6a088185d5fd8db9c21499a3'
+      );
+
     const pocs =
-      await POC.find({})
+      await POC.find({
+        addedBy: {
+          $ne: excludedUserId,
+        },
+      })
         .populate(
           'addedBy',
           'email phoneNumber firstName lastName'

@@ -442,6 +442,7 @@ export default function AdminDashboard() {
                         branchFilter
                       )
                     }
+                    showAddedBy
                     restrictActions
                     currentUser={user}
                   />
@@ -519,6 +520,7 @@ export default function AdminDashboard() {
                     onRefresh={
                       loadUsers
                     }
+                    currentUser={user}
                   />
                 </div>
               </div>
