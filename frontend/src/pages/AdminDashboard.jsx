@@ -1,4 +1,9 @@
-import { useState, useEffect, useCallback } from "react";
+import {
+  useState,
+  useEffect,
+  useCallback,
+  useRef,
+} from "react";
 import Navbar from "../components/layout/Navbar";
 import POCTable from "../components/admin/POCTable";
 import UserTable from "../components/admin/UserTable";
@@ -16,29 +21,40 @@ const TABS = ["Search", "POCs", "Recently Added", "Users"];
 export default function AdminDashboard() {
   const { user } = useUser();
 
-  const [activeTab, setActiveTab] = useState("Overview");
+  const [activeTab, setActiveTab] = useState("Search");
 
-  const [pocs, setPocs] = useState([]);
+  const [allPOCs, setAllPOCs] = useState([]);
+  const [directoryPOCs, setDirectoryPOCs] = useState([]);
   const [users, setUsers] = useState([]);
   const [recentPOCs, setRecentPOCs] = useState([]);
 
-  const [branchFilter, setBranchFilter] = useState("");
+  const [branchFilter, setBranchFilter] = useState("CSE");
 
   const [pocLoading, setPocLoading] = useState(true);
-
   const [userLoading, setUserLoading] = useState(true);
-
   const [showForm, setShowForm] = useState(false);
-
   const [editingPOC, setEditingPOC] = useState(null);
 
-  const loadPOCs = useCallback(async (branch = "") => {
+  const tabRefs = useRef({});
+  const branchRefs = useRef({});
+
+  const loadAllPOCs = useCallback(async () => {
+    try {
+      const data = await getAllPOCs();
+      setAllPOCs(data);
+    } catch (err) {
+      console.error(err);
+    }
+  }, []);
+
+  const loadDirectoryPOCs = useCallback(async (branch = "CSE") => {
     setPocLoading(true);
 
     try {
       const data = await getAllPOCs(branch);
-
-      setPocs(data);
+      setDirectoryPOCs(data);
+    } catch (err) {
+      console.error(err);
     } finally {
       setPocLoading(false);
     }
@@ -47,7 +63,6 @@ export default function AdminDashboard() {
   const loadRecentPOCs = useCallback(async () => {
     try {
       const data = await getRecentPOCs();
-
       setRecentPOCs(data);
     } catch (err) {
       console.error(err);
@@ -59,38 +74,32 @@ export default function AdminDashboard() {
 
     try {
       const data = await getAllUsers();
-
       setUsers(data);
+    } catch (err) {
+      console.error(err);
     } finally {
       setUserLoading(false);
     }
   }, []);
 
-  useEffect(() => {
-    if (activeTab !== "POCs") {
-      loadPOCs("");
-
-      loadUsers();
-
-      setBranchFilter("");
-    }
-  }, [activeTab, loadPOCs, loadUsers]);
+  const refreshAllPOCs = useCallback(async () => {
+    await Promise.all([
+      loadAllPOCs(),
+      loadDirectoryPOCs(branchFilter || "CSE"),
+      loadRecentPOCs(),
+    ]);
+  }, [loadAllPOCs, loadDirectoryPOCs, loadRecentPOCs, branchFilter]);
 
   useEffect(() => {
-    if (activeTab === "POCs") {
-      if (!branchFilter) {
-        setBranchFilter("CSE");
-
-        loadPOCs("CSE");
-      }
-    }
-  }, [activeTab, branchFilter, loadPOCs]);
+    loadAllPOCs();
+    loadUsers();
+  }, [loadAllPOCs, loadUsers]);
 
   useEffect(() => {
-    if (activeTab === "Users") {
-      loadUsers();
+    if (activeTab === "POCs" && directoryPOCs.length === 0) {
+      loadDirectoryPOCs(branchFilter || "CSE");
     }
-  }, [activeTab, loadUsers]);
+  }, [activeTab, branchFilter, directoryPOCs.length, loadDirectoryPOCs]);
 
   useEffect(() => {
     if (activeTab === "Recently Added") {
@@ -98,25 +107,35 @@ export default function AdminDashboard() {
     }
   }, [activeTab, loadRecentPOCs]);
 
+  useEffect(() => {
+    tabRefs.current[activeTab]?.scrollIntoView({
+      behavior: "smooth",
+      inline: "center",
+      block: "nearest",
+    });
+  }, [activeTab]);
+
+  useEffect(() => {
+    branchRefs.current[branchFilter]?.scrollIntoView({
+      behavior: "smooth",
+      inline: "center",
+      block: "nearest",
+    });
+  }, [branchFilter]);
+
   const handleEdit = (poc) => {
     setEditingPOC(poc);
-
     setShowForm(true);
   };
 
   const handleCloseForm = () => {
     setShowForm(false);
-
     setEditingPOC(null);
   };
 
-  // Stats
   const verifiedCount = users.filter((u) => u.isVerified).length;
-
   const pendingCount = users.filter((u) => !u.isVerified).length;
-
   const fiveMinsAgo = Date.now() - 5 * 60 * 1000;
-
   const onlineCount = users.filter(
     (u) => u.lastVisit && new Date(u.lastVisit) > fiveMinsAgo,
   ).length;
@@ -125,7 +144,6 @@ export default function AdminDashboard() {
     <div className="min-h-screen bg-slate-50">
       <Navbar />
 
-      {/* Header */}
       <div className="bg-navy">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 pt-8 pb-0">
           <h1 className="text-2xl font-display font-extrabold text-white mb-1">
@@ -136,12 +154,11 @@ export default function AdminDashboard() {
             Manage POCs, verify users, and monitor portal activity.
           </p>
 
-          {/* Stat cards */}
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-0">
             {[
               {
                 label: "Total POCs",
-                value: pocs.length,
+                value: allPOCs.length,
                 icon: "🏢",
                 color: "bg-blue-500",
               },
@@ -183,13 +200,14 @@ export default function AdminDashboard() {
             ))}
           </div>
 
-          {/* Tabs */}
-          {/* Tabs */}
           <div className="mt-6 overflow-x-auto scrollbar-hide">
             <div className="flex min-w-max gap-2 pb-2">
               {TABS.map((tab) => (
                 <button
                   key={tab}
+                  ref={(el) => {
+                    tabRefs.current[tab] = el;
+                  }}
                   onClick={() => setActiveTab(tab)}
                   className={`shrink-0 px-4 sm:px-5 py-2.5 rounded-xl text-xs sm:text-sm font-body font-medium transition-all relative whitespace-nowrap ${
                     activeTab === tab
@@ -198,7 +216,6 @@ export default function AdminDashboard() {
                   }`}
                 >
                   {tab}
-
                   {tab === "Users" && pendingCount > 0 && (
                     <span className="ml-1.5 bg-amber-400 text-navy text-[10px] font-bold px-1.5 py-0.5 rounded-full">
                       {pendingCount}
@@ -211,15 +228,11 @@ export default function AdminDashboard() {
         </div>
       </div>
 
-      {/* Tab content */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 animate-fade-in">
-        {/* ── OVERVIEW ── */}
         {activeTab === "Search" && (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* Admin search */}
             <AdminSearch />
 
-            {/* Branch breakdown */}
             <div className="card p-6">
               <h3 className="font-display font-bold text-navy mb-4">
                 POCs by Branch
@@ -227,10 +240,9 @@ export default function AdminDashboard() {
 
               <div className="space-y-3">
                 {BRANCHES.map((b) => {
-                  const count = pocs.filter((p) => p.branch == b).length;
-
-                  const pct = pocs.length
-                    ? Math.round((count / pocs.length) * 100)
+                  const count = allPOCs.filter((p) => p.branch == b).length;
+                  const pct = allPOCs.length
+                    ? Math.round((count / allPOCs.length) * 100)
                     : 0;
 
                   return (
@@ -240,9 +252,7 @@ export default function AdminDashboard() {
                       <div className="flex-1 h-2 bg-slate-100 rounded-full overflow-hidden">
                         <div
                           className="h-full bg-navy rounded-full transition-all duration-700"
-                          style={{
-                            width: `${pct}%`,
-                          }}
+                          style={{ width: `${pct}%` }}
                         />
                       </div>
 
@@ -255,7 +265,6 @@ export default function AdminDashboard() {
               </div>
             </div>
 
-            {/* Pending users */}
             {pendingCount > 0 && (
               <div className="card p-6 border-amber-200 lg:col-span-2">
                 <div className="flex items-center justify-between mb-4">
@@ -287,7 +296,6 @@ export default function AdminDashboard() {
                           <p className="text-sm font-semibold text-navy font-body">
                             {u.firstName} {u.lastName}
                           </p>
-
                           <p className="text-xs text-slate-400">{u.email}</p>
                         </div>
 
@@ -302,21 +310,21 @@ export default function AdminDashboard() {
           </div>
         )}
 
-        {/* ── POC DIRECTORY ── */}
         {activeTab === "POCs" && (
           <div className="space-y-5">
             <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-              {/* Branch filter */}
               <div className="flex overflow-x-auto scrollbar-hide gap-2 items-center pb-2">
                 {BRANCHES.map((b) => (
                   <button
                     key={b}
+                    ref={(el) => {
+                      branchRefs.current[b] = el;
+                    }}
                     onClick={() => {
                       setBranchFilter(b);
-
-                      loadPOCs(b);
+                      loadDirectoryPOCs(b);
                     }}
-                    className={`text-xs px-3 py-1.5 rounded-lg font-medium border transition-all ${
+                    className={`shrink-0 text-xs px-3 py-1.5 rounded-lg font-medium border transition-all whitespace-nowrap ${
                       branchFilter === b
                         ? "bg-navy text-white border-navy"
                         : "bg-white text-slate-600 border-slate-200 hover:border-navy/30"
@@ -342,15 +350,15 @@ export default function AdminDashboard() {
                 <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
                   <h3 className="font-display font-semibold text-navy text-sm">
                     {branchFilter ? `${branchFilter} POCs` : "All POCs"} —{" "}
-                    {pocs.length} companies
+                    {directoryPOCs.length} companies
                   </h3>
                 </div>
 
                 <div className="p-4">
                   <POCTable
-                    pocs={pocs}
+                    pocs={directoryPOCs}
                     onEdit={handleEdit}
-                    onRefresh={() => loadPOCs(branchFilter)}
+                    onRefresh={refreshAllPOCs}
                     showAddedBy
                     currentUser={user}
                   />
@@ -360,7 +368,6 @@ export default function AdminDashboard() {
           </div>
         )}
 
-        {/* ── RECENTLY ADDED ── */}
         {activeTab === "Recently Added" && (
           <div className="space-y-5">
             <div className="flex items-center justify-between">
@@ -378,9 +385,8 @@ export default function AdminDashboard() {
                 <POCTable
                   pocs={recentPOCs}
                   onEdit={handleEdit}
-                  onRefresh={loadRecentPOCs}
+                  onRefresh={refreshAllPOCs}
                   showAddedBy
-                  restrictActions
                   currentUser={user}
                 />
               </div>
@@ -388,7 +394,6 @@ export default function AdminDashboard() {
           </div>
         )}
 
-        {/* ── USERS ── */}
         {activeTab === "Users" && (
           <div className="space-y-5">
             <div className="flex items-center gap-4">
@@ -424,14 +429,10 @@ export default function AdminDashboard() {
         )}
       </div>
 
-      {/* POC Form Modal */}
       <POCForm
         isOpen={showForm}
         onClose={handleCloseForm}
-        onSuccess={() => {
-          loadPOCs(branchFilter);
-          loadRecentPOCs();
-        }}
+        onSuccess={refreshAllPOCs}
         editing={editingPOC}
       />
     </div>
