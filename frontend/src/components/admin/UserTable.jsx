@@ -102,6 +102,8 @@ export default function UserTable({
       );
     });
 
+    console.log(users);
+
   const handleToggle = async (
     user
   ) => {
