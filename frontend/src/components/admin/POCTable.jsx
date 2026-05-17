@@ -84,7 +84,7 @@ export default function POCTable({
             {pocs.map((poc) => {
               const canModify =
                 !restrictActions ||
-                poc.userId?._id ===
+                poc.userId?.clerkID ===
                   currentUser?._id;
 
               return (

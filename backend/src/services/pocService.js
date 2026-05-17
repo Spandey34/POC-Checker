@@ -203,7 +203,7 @@ const getAllPOCs = async (
   )
     .populate(
       'addedBy',
-      'email phoneNumber firstName lastName'
+      'clerkId email phoneNumber firstName lastName'
     )
     .sort({ name: 1 })
     .lean();
@@ -229,7 +229,7 @@ const getRecentPOCs =
       })
         .populate(
           'addedBy',
-          'email phoneNumber firstName lastName'
+          'clerkId email phoneNumber firstName lastName'
         )
         .sort({
           createdAt: -1,
