@@ -1,9 +1,4 @@
-import {
-  useState,
-  useEffect,
-  useCallback,
-  useRef,
-} from "react";
+import { useState, useEffect, useCallback } from "react";
 import Navbar from "../components/layout/Navbar";
 import POCTable from "../components/admin/POCTable";
 import UserTable from "../components/admin/UserTable";
@@ -18,41 +13,54 @@ import { useUser } from "@clerk/clerk-react";
 
 const TABS = ["Search", "POCs", "Recently Added", "Users"];
 
+function normalizePOC(poc = {}) {
+  return {
+    ...poc,
+    name: poc.name || poc.companyName || poc.company || "N/A",
+    createdAt:
+      poc.createdAt ||
+      poc.addedAt ||
+      poc.dateCreated ||
+      poc.updatedAt ||
+      new Date().toISOString(),
+    branch: poc.branch || "",
+    aliases: Array.isArray(poc.aliases) ? poc.aliases : [],
+    userId: poc.userId || poc.addedBy || null,
+  };
+}
+
 export default function AdminDashboard() {
   const { user } = useUser();
 
   const [activeTab, setActiveTab] = useState("Search");
 
   const [allPOCs, setAllPOCs] = useState([]);
-  const [directoryPOCs, setDirectoryPOCs] = useState([]);
+  const [pocs, setPocs] = useState([]);
   const [users, setUsers] = useState([]);
   const [recentPOCs, setRecentPOCs] = useState([]);
 
-  const [branchFilter, setBranchFilter] = useState("CSE");
+  const [branchFilter, setBranchFilter] = useState("");
 
   const [pocLoading, setPocLoading] = useState(true);
   const [userLoading, setUserLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [editingPOC, setEditingPOC] = useState(null);
 
-  const tabRefs = useRef({});
-  const branchRefs = useRef({});
-
   const loadAllPOCs = useCallback(async () => {
     try {
       const data = await getAllPOCs();
-      setAllPOCs(data);
+      setAllPOCs((data || []).map(normalizePOC));
     } catch (err) {
       console.error(err);
     }
   }, []);
 
-  const loadDirectoryPOCs = useCallback(async (branch = "CSE") => {
+  const loadPOCs = useCallback(async (branch = "") => {
     setPocLoading(true);
 
     try {
       const data = await getAllPOCs(branch);
-      setDirectoryPOCs(data);
+      setPocs((data || []).map(normalizePOC));
     } catch (err) {
       console.error(err);
     } finally {
@@ -63,7 +71,7 @@ export default function AdminDashboard() {
   const loadRecentPOCs = useCallback(async () => {
     try {
       const data = await getRecentPOCs();
-      setRecentPOCs(data);
+      setRecentPOCs((data || []).map(normalizePOC));
     } catch (err) {
       console.error(err);
     }
@@ -74,7 +82,7 @@ export default function AdminDashboard() {
 
     try {
       const data = await getAllUsers();
-      setUsers(data);
+      setUsers(data || []);
     } catch (err) {
       console.error(err);
     } finally {
@@ -82,46 +90,25 @@ export default function AdminDashboard() {
     }
   }, []);
 
-  const refreshAllPOCs = useCallback(async () => {
-    await Promise.all([
-      loadAllPOCs(),
-      loadDirectoryPOCs(branchFilter || "CSE"),
-      loadRecentPOCs(),
-    ]);
-  }, [loadAllPOCs, loadDirectoryPOCs, loadRecentPOCs, branchFilter]);
-
   useEffect(() => {
     loadAllPOCs();
     loadUsers();
   }, [loadAllPOCs, loadUsers]);
 
   useEffect(() => {
-    if (activeTab === "POCs" && directoryPOCs.length === 0) {
-      loadDirectoryPOCs(branchFilter || "CSE");
+    if (activeTab === "POCs") {
+      if (!branchFilter) {
+        setBranchFilter("CSE");
+        loadPOCs("CSE");
+      }
     }
-  }, [activeTab, branchFilter, directoryPOCs.length, loadDirectoryPOCs]);
+  }, [activeTab, branchFilter, loadPOCs]);
 
   useEffect(() => {
     if (activeTab === "Recently Added") {
       loadRecentPOCs();
     }
   }, [activeTab, loadRecentPOCs]);
-
-  useEffect(() => {
-    tabRefs.current[activeTab]?.scrollIntoView({
-      behavior: "smooth",
-      inline: "center",
-      block: "nearest",
-    });
-  }, [activeTab]);
-
-  useEffect(() => {
-    branchRefs.current[branchFilter]?.scrollIntoView({
-      behavior: "smooth",
-      inline: "center",
-      block: "nearest",
-    });
-  }, [branchFilter]);
 
   const handleEdit = (poc) => {
     setEditingPOC(poc);
@@ -132,6 +119,14 @@ export default function AdminDashboard() {
     setShowForm(false);
     setEditingPOC(null);
   };
+
+  const refreshAll = useCallback(async () => {
+    await Promise.all([
+      loadAllPOCs(),
+      loadPOCs(branchFilter || "CSE"),
+      loadRecentPOCs(),
+    ]);
+  }, [loadAllPOCs, loadPOCs, loadRecentPOCs, branchFilter]);
 
   const verifiedCount = users.filter((u) => u.isVerified).length;
   const pendingCount = users.filter((u) => !u.isVerified).length;
@@ -205,9 +200,6 @@ export default function AdminDashboard() {
               {TABS.map((tab) => (
                 <button
                   key={tab}
-                  ref={(el) => {
-                    tabRefs.current[tab] = el;
-                  }}
                   onClick={() => setActiveTab(tab)}
                   className={`shrink-0 px-4 sm:px-5 py-2.5 rounded-xl text-xs sm:text-sm font-body font-medium transition-all relative whitespace-nowrap ${
                     activeTab === tab
@@ -216,6 +208,7 @@ export default function AdminDashboard() {
                   }`}
                 >
                   {tab}
+
                   {tab === "Users" && pendingCount > 0 && (
                     <span className="ml-1.5 bg-amber-400 text-navy text-[10px] font-bold px-1.5 py-0.5 rounded-full">
                       {pendingCount}
@@ -317,14 +310,11 @@ export default function AdminDashboard() {
                 {BRANCHES.map((b) => (
                   <button
                     key={b}
-                    ref={(el) => {
-                      branchRefs.current[b] = el;
-                    }}
                     onClick={() => {
                       setBranchFilter(b);
-                      loadDirectoryPOCs(b);
+                      loadPOCs(b);
                     }}
-                    className={`shrink-0 text-xs px-3 py-1.5 rounded-lg font-medium border transition-all whitespace-nowrap ${
+                    className={`text-xs px-3 py-1.5 rounded-lg font-medium border transition-all whitespace-nowrap ${
                       branchFilter === b
                         ? "bg-navy text-white border-navy"
                         : "bg-white text-slate-600 border-slate-200 hover:border-navy/30"
@@ -350,15 +340,15 @@ export default function AdminDashboard() {
                 <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
                   <h3 className="font-display font-semibold text-navy text-sm">
                     {branchFilter ? `${branchFilter} POCs` : "All POCs"} —{" "}
-                    {directoryPOCs.length} companies
+                    {pocs.length} companies
                   </h3>
                 </div>
 
                 <div className="p-4">
                   <POCTable
-                    pocs={directoryPOCs}
+                    pocs={pocs}
                     onEdit={handleEdit}
-                    onRefresh={refreshAllPOCs}
+                    onRefresh={() => loadPOCs(branchFilter || "CSE")}
                     showAddedBy
                     currentUser={user}
                   />
@@ -385,8 +375,9 @@ export default function AdminDashboard() {
                 <POCTable
                   pocs={recentPOCs}
                   onEdit={handleEdit}
-                  onRefresh={refreshAllPOCs}
+                  onRefresh={loadRecentPOCs}
                   showAddedBy
+                  restrictActions
                   currentUser={user}
                 />
               </div>
@@ -432,7 +423,7 @@ export default function AdminDashboard() {
       <POCForm
         isOpen={showForm}
         onClose={handleCloseForm}
-        onSuccess={refreshAllPOCs}
+        onSuccess={refreshAll}
         editing={editingPOC}
       />
     </div>
