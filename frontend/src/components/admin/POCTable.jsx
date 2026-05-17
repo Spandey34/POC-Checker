@@ -48,6 +48,7 @@ export default function POCTable({
       </div>
     );
   }
+  console.log(pocs[0].userId, currentUser?._id);
 
   return (
     <>
@@ -84,7 +85,7 @@ export default function POCTable({
               const canModify =
                 poc.userId?.clerkId ===
                   currentUser?._id;
-
+                  
               return (
                 <tr
                   key={poc._id}
