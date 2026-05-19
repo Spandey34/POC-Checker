@@ -28,7 +28,6 @@ export default function UserSearch() {
       return;
     }
 
-    // trigger only after 3+ chars
     if (charCount < 3) {
       setResult(null);
       setState('idle');
@@ -137,16 +136,14 @@ export default function UserSearch() {
                   {(
                     result.results ||
                     []
-                  ).map((poc) => (
+                  ).map((name) => (
                     <div
-                      key={poc._id}
+                      key={name}
                       className="rounded-xl bg-white border border-emerald-100 p-4"
                     >
                       <p className="font-semibold text-navy">
-                        {poc.name ||
-                          'N/A'}
+                        {name}
                       </p>
-
                     </div>
                   ))}
                 </div>
@@ -169,7 +166,7 @@ export default function UserSearch() {
                   </strong>
                   " is not registered
                   as a Point of
-                  Contact.
+                 Contact.
                 </p>
               </>
             )}
