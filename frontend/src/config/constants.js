@@ -1,6 +1,16 @@
 export const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 export const ALLOWED_DOMAIN = import.meta.env.VITE_ALLOWED_DOMAIN || 'nitjsr.ac.in';
 export const BRANCHES = ['CSE', 'CIVIL', 'ECE', 'EE', 'ECM', 'MME', 'PIE', 'MECH'];
+export const BRANCH_MAPPINGS = {
+  'ec': 'ECE',
+  'ee': 'EE',
+  'cs': 'CSE',
+  'ce': 'CIVIL',
+  'cm': 'ECM',
+  'mm': 'MME',
+  'pi': 'PIE',
+  'me': 'MECH',
+}
 
 export const BRANCH_COLORS = {
   CSE:   'bg-blue-100 text-blue-800',

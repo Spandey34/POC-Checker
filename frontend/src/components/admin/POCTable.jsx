@@ -3,6 +3,7 @@ import { BranchBadge } from '../common/Badge';
 import ConfirmDialog from '../common/ConfirmDialog';
 import { deletePOC } from '../../services/pocService';
 import toast from 'react-hot-toast';
+import { BRANCH_MAPPINGS } from '../../config/constants';
 
 export default function POCTable({
   pocs,
@@ -11,6 +12,7 @@ export default function POCTable({
   showAddedBy = false,
   currentUser = null,
 }) {
+  console.log(currentUser);
   const [deleting, setDeleting] =
     useState(null);
 
@@ -81,10 +83,9 @@ export default function POCTable({
 
           <tbody className="divide-y divide-slate-100">
             {pocs.map((poc) => {
-              const canModify =
-                poc.userId?.clerkId !==undefined &&
-                poc.userId?.clerkId ===
-                  currentUser?.id;
+              const canModify = poc.branch ===
+                BRANCH_MAPPINGS[
+                  currentUser?.email]
               return (
                 <tr
                   key={poc._id}
