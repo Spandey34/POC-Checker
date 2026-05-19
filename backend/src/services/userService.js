@@ -5,6 +5,13 @@ const ADMIN_EMAIL = process.env.ADMIN_EMAIL || '';
 
 const isAllowedEmail = (email) => email.endsWith(`@${ALLOWED_DOMAIN}`);
 
+const getBranchFromEmail = (email) => {
+  if (!email) return null;
+
+  const match = email.toLowerCase().match(/ug([a-z]{2})/);
+  return match ? match[1] : null;
+};
+
 /**
  * Create or update a user from Clerk webhook data.
  */
@@ -30,8 +37,22 @@ const upsertUserFromClerk = async ({ clerkId, email, firstName, lastName }) => {
   return user;
 };
 
-const getAllUsers = async () =>
-  User.find({ role: 'user' }).sort({ createdAt: -1 }).lean();
+const getAllUsers = async (adminEmail) => {
+  const adminBranch = getBranchFromEmail(adminEmail);
+
+  if (!adminBranch) {
+    throw new Error('Unable to detect branch from admin email.');
+  }
+
+  return User.find({
+    role: 'user',
+    email: {
+      $regex: new RegExp(`^\\d{4}ug${adminBranch}`, 'i'),
+    },
+  })
+    .sort({ createdAt: -1 })
+    .lean();
+};
 
 const toggleVerification = async (userId) => {
   const user = await User.findById(userId);
