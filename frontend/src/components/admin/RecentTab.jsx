@@ -30,8 +30,7 @@ function getActionBadgeClass(actionType) {
   }
 }
 
-export default function RecentTab(recentItems) {
-    console.log(recentItems);
+export default function RecentTab({recentItems}) {
   if (!recentItems.length) {
     return (
       <div className="text-center py-16 text-slate-400">
