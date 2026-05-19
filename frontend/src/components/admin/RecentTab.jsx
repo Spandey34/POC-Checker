@@ -40,6 +40,7 @@ export default function RecentTab(recentItems) {
       </div>
     );
   }
+  console.log(recentItems)
 
   return (
     <div className="overflow-x-auto rounded-xl border border-slate-200">
