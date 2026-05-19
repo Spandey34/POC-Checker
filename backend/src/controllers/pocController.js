@@ -1,6 +1,7 @@
 const pocService = require('../services/pocService');
 const recentService = require('../services/recentService');
-const { BRANCHES, POC } = require('../models/POC');
+const POC = require('../models/POC');
+const { BRANCHES } = require('../models/POC');
 const User = require('../models/User');
 
 const getBranches = (_req, res) => res.json(BRANCHES);
