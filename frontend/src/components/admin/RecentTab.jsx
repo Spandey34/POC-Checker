@@ -32,14 +32,6 @@ function getActionBadgeClass(actionType) {
 
 export default function RecentTab(recentItems) {
 
-  if (loading) {
-    return (
-      <div className="rounded-xl border border-slate-200 p-6 text-sm text-slate-500">
-        Loading recent activity...
-      </div>
-    );
-  }
-
   if (!recentItems.length) {
     return (
       <div className="text-center py-16 text-slate-400">
