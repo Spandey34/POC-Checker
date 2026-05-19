@@ -214,35 +214,6 @@ const getAllPOCs = async (
   }));
 };
 
-const getRecentPOCs =
-  async () => {
-    const excludedUserId =
-      new mongoose.Types.ObjectId(
-        '6a088185d5fd8db9c21499a3'
-      );
-
-    const pocs =
-      await POC.find({
-        addedBy: {
-          $ne: excludedUserId,
-        },
-      })
-        .populate(
-          'addedBy',
-          'clerkId email phoneNumber firstName lastName'
-        )
-        .sort({
-          createdAt: -1,
-        })
-        .limit(20)
-        .lean();
-
-    return pocs.map((poc) => ({
-      ...poc,
-      userId: poc.addedBy,
-    }));
-  };
-
 const addPOC = async ({
   name,
   aliases,

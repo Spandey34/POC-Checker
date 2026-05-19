@@ -6,12 +6,14 @@ import POCForm from "../components/admin/POCForm";
 import AdminSearch from "../components/admin/AdminSearch";
 import { BranchBadge } from "../components/common/Badge";
 import LoadingSpinner from "../components/common/LoadingSpinner";
-import { getAllPOCs, getRecentPOCs } from "../services/pocService";
+import { getAllPOCs } from "../services/pocService";
+import { getRecentActivities } from "../services/recentService";
 import { getAllUsers } from "../services/userService";
 import { BRANCHES } from "../config/constants";
 import { useUser } from "@clerk/clerk-react";
+import RecentTab from "../components/admin/RecentTab";
 
-const TABS = ["Search", "POCs", "Recently Added", "Users"];
+const TABS = ["Search", "POCs", "Recent Activity", "Users"];
 
 function normalizePOC(poc = {}) {
   return {
@@ -37,7 +39,7 @@ export default function AdminDashboard() {
   const [allPOCs, setAllPOCs] = useState([]);
   const [pocs, setPocs] = useState([]);
   const [users, setUsers] = useState([]);
-  const [recentPOCs, setRecentPOCs] = useState([]);
+  const [recentActivity, setRecentActivity] = useState([]);
 
   const [branchFilter, setBranchFilter] = useState("");
 
@@ -68,10 +70,10 @@ export default function AdminDashboard() {
     }
   }, []);
 
-  const loadRecentPOCs = useCallback(async () => {
+  const loadRecentActivity= useCallback(async () => {
     try {
-      const data = await getRecentPOCs();
-      setRecentPOCs((data || []).map(normalizePOC));
+      const data = await getRecentActivities();
+      setRecentActivity(data);;
     } catch (err) {
       console.error(err);
     }
@@ -105,10 +107,10 @@ export default function AdminDashboard() {
   }, [activeTab, branchFilter, loadPOCs]);
 
   useEffect(() => {
-    if (activeTab === "Recently Added") {
-      loadRecentPOCs();
+    if (activeTab === "Recent Activity") {
+      loadRecentActivity();
     }
-  }, [activeTab, loadRecentPOCs]);
+  }, [activeTab, loadRecentActivity]);
 
   const handleEdit = (poc) => {
     setEditingPOC(poc);
@@ -124,9 +126,9 @@ export default function AdminDashboard() {
     await Promise.all([
       loadAllPOCs(),
       loadPOCs(branchFilter || "CSE"),
-      loadRecentPOCs(),
+      loadRecentActivity(),
     ]);
-  }, [loadAllPOCs, loadPOCs, loadRecentPOCs, branchFilter]);
+  }, [loadAllPOCs, loadPOCs, loadRecentActivity, branchFilter]);
 
   const verifiedCount = users.filter((u) => u.isVerified).length;
   const pendingCount = users.filter((u) => !u.isVerified).length;
@@ -358,7 +360,7 @@ export default function AdminDashboard() {
           </div>
         )}
 
-        {activeTab === "Recently Added" && (
+        {activeTab === "Recent Activity" && (
           <div className="space-y-5">
             <div className="flex items-center justify-between">
               <h3 className="font-display font-semibold text-navy">
@@ -366,20 +368,13 @@ export default function AdminDashboard() {
               </h3>
 
               <span className="text-sm text-slate-500">
-                {recentPOCs.length} recently added
+                {recentActivity.length} recently added
               </span>
             </div>
 
             <div className="card p-0 overflow-hidden">
               <div className="p-4">
-                <POCTable
-                  pocs={recentPOCs}
-                  onEdit={handleEdit}
-                  onRefresh={loadRecentPOCs}
-                  showAddedBy
-                  restrictActions
-                  currentUser={user}
-                />
+                <RecentTab recentItems={recentActivity} />
               </div>
             </div>
           </div>
