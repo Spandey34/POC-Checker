@@ -26,13 +26,126 @@ const userSearch = async (req, res, next) => {
       });
     }
 
-    const result = await pocService.searchByName(q);
+    const normalized = q
+      .toLowerCase()
+      .replace(/\s+/g, '')
+      .trim();
 
-    if (!result) {
-      return res.json({ found: false });
-    }
+    const allPOCs =
+      await pocService.getAllPOCs();
 
-    res.json({ found: true });
+    const scored = allPOCs
+      .map((poc) => {
+        const name =
+          (poc.nameLower || '')
+            .replace(/\s+/g, '');
+
+        const aliases =
+          (poc.aliases || []).map(
+            (a) =>
+              a
+                .toLowerCase()
+                .replace(/\s+/g, '')
+          );
+
+        const acronyms =
+          (poc.acronyms || []).map(
+            (a) =>
+              a
+                .toLowerCase()
+                .replace(/\s+/g, '')
+          );
+
+        let score = 0;
+
+        // acronym exact
+        if (
+          acronyms.includes(
+            normalized
+          )
+        ) {
+          score = 100;
+        }
+
+        // acronym partial
+        else if (
+          acronyms.some((a) =>
+            a.includes(normalized)
+          )
+        ) {
+          score = 90;
+        }
+
+        // alias exact
+        else if (
+          aliases.includes(
+            normalized
+          )
+        ) {
+          score = 80;
+        }
+
+        // alias partial
+        else if (
+          aliases.some((a) =>
+            a.includes(normalized)
+          )
+        ) {
+          score = 70;
+        }
+
+        // exact name
+        else if (
+          name === normalized
+        ) {
+          score = 60;
+        }
+
+        // starts with
+        else if (
+          name.startsWith(
+            normalized
+          )
+        ) {
+          score = 50;
+        }
+
+        // partial name
+        else if (
+          name.includes(
+            normalized
+          )
+        ) {
+          score = 40;
+        }
+
+        return {
+          ...poc,
+          score,
+        };
+      })
+      .filter(
+        (poc) => poc.score > 0
+      )
+      .sort((a, b) => {
+        if (
+          b.score !== a.score
+        ) {
+          return (
+            b.score - a.score
+          );
+        }
+
+        return a.name.localeCompare(
+          b.name
+        );
+      })
+      .slice(0, 3);
+
+    return res.json({
+      found: scored.length > 0,
+      results: scored,
+    });
   } catch (err) {
     next(err);
   }
