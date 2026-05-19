@@ -113,14 +113,54 @@ const updatePOC = async (req, res, next) => {
       });
     }
 
+    const getBranchFromEmail = (email = '') => {
+      const match = email.toLowerCase().match(/ug([a-z]{2})/);
+      if (!match) return null;
+
+      const code = match[1];
+
+      const BRANCH_MAPPINGS = {
+        ec: 'ECE',
+        ee: 'EE',
+        cs: 'CSE',
+        ce: 'CIVIL',
+        cm: 'ECM',
+        mm: 'MME',
+        pi: 'PIE',
+        me: 'MECH',
+      };
+
+      return BRANCH_MAPPINGS[code] || null;
+    };
+
+    const userBranch = getBranchFromEmail(user.email);
+
     const poc = await pocService.updatePOC(id, req.body);
 
-    await recentService.upsertUpdatedRecent({
-      POCId: poc._id,
-      POCName: poc.name,
-      POCBranch: poc.branch,
-      actionBy: user._id,
-    });
+    if (!userBranch) {
+      return res.status(400).json({
+        message: 'Unable to determine user branch from email.',
+      });
+    }
+
+    const isTransfer = poc.branch !== userBranch;
+
+    if (isTransfer) {
+      await recentService.createRecent({
+        POCId: poc._id,
+        POCName: poc.name,
+        POCBranch: poc.branch,
+        actionType: 'Transferred',
+        actionBy: user._id,
+      });
+    } else {
+      await recentService.upsertUpdatedRecent({
+        POCId: poc._id,
+        POCName: poc.name,
+        POCBranch: poc.branch,
+        actionBy: user._id,
+      });
+    }
 
     res.json(poc);
   } catch (err) {
