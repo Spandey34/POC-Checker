@@ -12,7 +12,6 @@ export default function POCTable({
   showAddedBy = false,
   currentUser = null,
 }) {
-  console.log(currentUser.primaryEmailAddress.emailAddress);
   const [deleting, setDeleting] =
     useState(null);
 
@@ -85,7 +84,7 @@ export default function POCTable({
             {pocs.map((poc) => {
               const canModify = poc.branch ===
                 BRANCH_MAPPINGS[
-                  currentUser?.email]
+                  currentUser.primaryEmailAddress.emailAddress.slice(6,8)]
               return (
                 <tr
                   key={poc._id}
