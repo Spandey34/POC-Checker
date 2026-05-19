@@ -30,9 +30,6 @@ export default function UserDashboard() {
         <div className="card p-8 shadow-xl animate-slide-up">
           <div className="text-center mb-8">
             <h2 className="font-display font-bold text-navy text-xl mb-1">Is this company our POC?</h2>
-            <p className="text-slate-400 text-sm font-body">
-              Enter the exact company name — abbreviations not accepted
-            </p>
           </div>
           <UserSearch />
         </div>
