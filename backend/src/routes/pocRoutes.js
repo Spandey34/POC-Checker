@@ -51,12 +51,6 @@ router.get(
 
 
 // Recently added POCs
-router.get(
-  '/recent',
-  authenticate,
-  isAdmin,
-  ctrl.getRecentPOCs
-);
 
 
 // Get all POCs

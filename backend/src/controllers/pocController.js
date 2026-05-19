@@ -15,15 +15,6 @@ const getAll = async (req, res, next) => {
   }
 };
 
-const getRecentPOCs = async (req, res, next) => {
-  try {
-    const pocs = await pocService.getRecentPOCs();
-    res.json(pocs);
-  } catch (err) {
-    next(err);
-  }
-};
-
 const userSearch = async (req, res, next) => {
   try {
     const { q } = req.query;

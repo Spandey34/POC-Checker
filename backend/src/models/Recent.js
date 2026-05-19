@@ -1,5 +1,5 @@
 const mongoose = require('mongoose');
-import { BRANCHES } from './POC';
+const { BRANCHES } = require('./POC');
 
 const RecentSchema = new mongoose.Schema(
   {
