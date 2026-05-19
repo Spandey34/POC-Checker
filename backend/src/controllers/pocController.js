@@ -31,116 +31,52 @@ const userSearch = async (req, res, next) => {
       .replace(/\s+/g, '')
       .trim();
 
-    const allPOCs =
-      await pocService.getAllPOCs();
+    const allPOCs = await pocService.getAllPOCs();
 
     const scored = allPOCs
       .map((poc) => {
-        const name =
-          (poc.nameLower || '')
-            .replace(/\s+/g, '');
+        const name = (poc.nameLower || '').replace(/\s+/g, '');
 
-        const aliases =
-          (poc.aliases || []).map(
-            (a) =>
-              a
-                .toLowerCase()
-                .replace(/\s+/g, '')
-          );
+        const aliases = (poc.aliases || []).map((a) =>
+          a.toLowerCase().replace(/\s+/g, '')
+        );
 
-        const acronyms =
-          (poc.acronyms || []).map(
-            (a) =>
-              a
-                .toLowerCase()
-                .replace(/\s+/g, '')
-          );
+        const acronyms = (poc.acronyms || []).map((a) =>
+          a.toLowerCase().replace(/\s+/g, '')
+        );
 
         let score = 0;
 
-        // acronym exact
-        if (
-          acronyms.includes(
-            normalized
-          )
-        ) {
+        if (acronyms.includes(normalized)) {
           score = 100;
-        }
-
-        // acronym partial
-        else if (
-          acronyms.some((a) =>
-            a.includes(normalized)
-          )
-        ) {
+        } else if (acronyms.some((a) => a.includes(normalized))) {
           score = 90;
-        }
-
-        // alias exact
-        else if (
-          aliases.includes(
-            normalized
-          )
-        ) {
+        } else if (aliases.includes(normalized)) {
           score = 80;
-        }
-
-        // alias partial
-        else if (
-          aliases.some((a) =>
-            a.includes(normalized)
-          )
-        ) {
+        } else if (aliases.some((a) => a.includes(normalized))) {
           score = 70;
-        }
-
-        // exact name
-        else if (
-          name === normalized
-        ) {
+        } else if (name === normalized) {
           score = 60;
-        }
-
-        // starts with
-        else if (
-          name.startsWith(
-            normalized
-          )
-        ) {
+        } else if (name.startsWith(normalized)) {
           score = 50;
-        }
-
-        // partial name
-        else if (
-          name.includes(
-            normalized
-          )
-        ) {
+        } else if (name.includes(normalized)) {
           score = 40;
         }
 
         return {
-          ...poc,
+          name: poc.name,
           score,
         };
       })
-      .filter(
-        (poc) => poc.score > 0
-      )
+      .filter((poc) => poc.score > 0)
       .sort((a, b) => {
-        if (
-          b.score !== a.score
-        ) {
-          return (
-            b.score - a.score
-          );
+        if (b.score !== a.score) {
+          return b.score - a.score;
         }
-
-        return a.name.localeCompare(
-          b.name
-        );
+        return a.name.localeCompare(b.name);
       })
-      .slice(0, 3);
+      .slice(0, 3)
+      .map((poc) => poc.name);
 
     return res.json({
       found: scored.length > 0,

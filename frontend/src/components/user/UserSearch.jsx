@@ -147,11 +147,6 @@ export default function UserSearch() {
                           'N/A'}
                       </p>
 
-                      <p className="text-xs text-slate-500 mt-1">
-                        Branch:{' '}
-                        {poc.branch ||
-                          'N/A'}
-                      </p>
                     </div>
                   ))}
                 </div>
