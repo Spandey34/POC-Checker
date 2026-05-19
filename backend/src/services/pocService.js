@@ -298,7 +298,6 @@ module.exports = {
   searchByName,
   adminSearch,
   getAllPOCs,
-  getRecentPOCs,
   addPOC,
   updatePOC,
   deletePOC,
