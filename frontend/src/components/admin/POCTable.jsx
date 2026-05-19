@@ -12,7 +12,7 @@ export default function POCTable({
   showAddedBy = false,
   currentUser = null,
 }) {
-  console.log(currentUser);
+  console.log(currentUser.primaryEmailAddress.emailAddress);
   const [deleting, setDeleting] =
     useState(null);
 
