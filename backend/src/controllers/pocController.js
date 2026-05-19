@@ -167,7 +167,6 @@ const deletePOC = async (req, res, next) => {
 module.exports = {
   getBranches,
   getAll,
-  getRecentPOCs,
   userSearch,
   adminSearch,
   addPOC,
