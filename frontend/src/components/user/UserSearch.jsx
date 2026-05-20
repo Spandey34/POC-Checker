@@ -28,7 +28,7 @@ export default function UserSearch() {
       return;
     }
 
-    if (charCount < 3) {
+    if (charCount < 2) {
       setResult(null);
       setState('idle');
       setError('');
@@ -97,7 +97,7 @@ export default function UserSearch() {
       </div>
 
       <p className="mt-2 text-xs text-slate-500">
-        Type at least 3 characters
+        Type at least 2 characters
         to search automatically.
       </p>
 

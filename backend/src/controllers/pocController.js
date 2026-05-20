@@ -26,28 +26,31 @@ const userSearch = async (req, res, next) => {
       });
     }
 
-    const normalized = q
-      .toLowerCase()
-      .replace(/\s+/g, '')
-      .trim();
+    const normalize = (str = '') =>
+      str.toLowerCase().replace(/\s+/g, '').trim();
+
+    const normalized = normalize(q);
 
     const allPOCs = await pocService.getAllPOCs();
 
     const scored = allPOCs
       .map((poc) => {
-        const name = (poc.nameLower || '').replace(/\s+/g, '');
+        const name = normalize(poc.nameLower || '');
 
         const aliases = (poc.aliases || []).map((a) =>
-          a.toLowerCase().replace(/\s+/g, '')
+          normalize(a)
         );
 
         const acronyms = (poc.acronyms || []).map((a) =>
-          a.toLowerCase().replace(/\s+/g, '')
+          normalize(a)
         );
 
         let score = 0;
 
-        if (acronyms.includes(normalized)) {
+        // Highest priority: exact POC name match
+        if (name === normalized) {
+          score = 120;
+        } else if (acronyms.includes(normalized)) {
           score = 100;
         } else if (acronyms.some((a) => a.includes(normalized))) {
           score = 90;
@@ -55,12 +58,10 @@ const userSearch = async (req, res, next) => {
           score = 80;
         } else if (aliases.some((a) => a.includes(normalized))) {
           score = 70;
-        } else if (name === normalized) {
-          score = 60;
         } else if (name.startsWith(normalized)) {
-          score = 50;
+          score = 60;
         } else if (name.includes(normalized)) {
-          score = 40;
+          score = 50;
         }
 
         return {
