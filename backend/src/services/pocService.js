@@ -163,19 +163,19 @@ const adminSearch = async (
         else if (exactAcronym) {
           score = 100;
         } else if (
-          partialAcronym
+          exactAlias
         ) {
           score = 90;
         } else if (
-          exactAlias
+          startsWithName
         ) {
           score = 80;
         } else if (
-          partialAlias
+          partialAcronym
         ) {
           score = 70;
         } else if (
-          startsWithName
+          partialAlias
         ) {
           score = 50;
         } else if (
