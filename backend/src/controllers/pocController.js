@@ -25,59 +25,7 @@ const userSearch = async (req, res, next) => {
         message: 'Search query is required.',
       });
     }
-
-    const normalize = (str = '') =>
-      str.toLowerCase().replace(/\s+/g, '').trim();
-
-    const normalized = normalize(q);
-
-    const allPOCs = await pocService.getAllPOCs();
-
-    const scored = allPOCs
-      .map((poc) => {
-        const name = normalize(poc.nameLower || '');
-
-        const aliases = (poc.aliases || []).map((a) =>
-          normalize(a)
-        );
-
-        const acronyms = (poc.acronyms || []).map((a) =>
-          normalize(a)
-        );
-
-        let score = 0;
-
-        // Highest priority: exact POC name match
-        if (name === normalized) {
-          score = 120;
-        } else if (acronyms.includes(normalized)) {
-          score = 100;
-        } else if (acronyms.some((a) => a.includes(normalized))) {
-          score = 90;
-        } else if (aliases.includes(normalized)) {
-          score = 80;
-        } else if (aliases.some((a) => a.includes(normalized))) {
-          score = 70;
-        } else if (name.startsWith(normalized)) {
-          score = 60;
-        } else if (name.includes(normalized)) {
-          score = 50;
-        }
-
-        return {
-          name: poc.name,
-          score,
-        };
-      })
-      .filter((poc) => poc.score > 0)
-      .sort((a, b) => {
-        if (b.score !== a.score) {
-          return b.score - a.score;
-        }
-        return a.name.localeCompare(b.name);
-      })
-      .slice(0, 3)
-      .map((poc) => poc.name);
+    const scored = await pocService.searchByName(q);
 
     return res.json({
       found: scored.length > 0,

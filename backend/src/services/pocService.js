@@ -6,43 +6,64 @@ const mongoose =
 
 
 const searchByName = async (
-  query
+  q
 ) => {
-  const normalized =
-    query
-      .replace(/\s+/g, '')
-      .toLowerCase()
-      .trim();
 
-  const result =
-    await POC.aggregate([
-      {
-        $addFields: {
-          compactName: {
-            $replaceAll: {
-              input:
-                '$nameLower',
-              find: ' ',
-              replacement:
-                '',
-            },
-          },
-        },
-      },
+  const normalize = (str = '') =>
+    str.toLowerCase().replace(/\s+/g, '').trim();
 
-      {
-        $match: {
-          compactName:
-            normalized,
-        },
-      },
+  const normalized = normalize(q);
 
-      {
-        $limit: 1,
-      },
-    ]);
+  const allPOCs =
+    await POC.find({}).lean();
 
-  return result[0] || null;
+  const scored = allPOCs
+    .map((poc) => {
+      const name = normalize(poc.nameLower || '');
+
+      const aliases = (poc.aliases || []).map((a) =>
+        normalize(a)
+      );
+
+      const acronyms = (poc.acronyms || []).map((a) =>
+        normalize(a)
+      );
+
+      let score = 0;
+
+      // Highest priority: exact POC name match
+      if (name === normalized) {
+        score = 120;
+      } else if (acronyms.includes(normalized)) {
+        score = 100;
+      } else if (acronyms.some((a) => a.includes(normalized))) {
+        score = 90;
+      } else if (aliases.includes(normalized)) {
+        score = 80;
+      } else if (aliases.some((a) => a.includes(normalized))) {
+        score = 70;
+      } else if (name.startsWith(normalized)) {
+        score = 60;
+      } else if (name.includes(normalized)) {
+        score = 50;
+      }
+
+      return {
+        name: poc.name,
+        score,
+      };
+    })
+    .filter((poc) => poc.score > 0)
+    .sort((a, b) => {
+      if (b.score !== a.score) {
+        return b.score - a.score;
+      }
+      return a.name.localeCompare(b.name);
+    })
+    .slice(0, 3)
+    .map((poc) => poc.name);
+
+  return scored;
 };
 
 const adminSearch = async (
@@ -136,8 +157,10 @@ const adminSearch = async (
           compactName.startsWith(
             normalized
           );
-
-        if (exactAcronym) {
+        if (exactName) {
+          score = 120;
+        }
+        else if (exactAcronym) {
           score = 100;
         } else if (
           partialAcronym
@@ -151,10 +174,6 @@ const adminSearch = async (
           partialAlias
         ) {
           score = 70;
-        } else if (
-          exactName
-        ) {
-          score = 60;
         } else if (
           startsWithName
         ) {
@@ -185,7 +204,7 @@ const adminSearch = async (
         return a.name.localeCompare(
           b.name
         );
-      });
+      }).slice(0, 5);
 
   return scored;
 };
