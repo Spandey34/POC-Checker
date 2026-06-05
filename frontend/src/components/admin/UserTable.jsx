@@ -213,7 +213,7 @@ export default function UserTable({
                 />
               </td>
 
-              <td className="px-4 py-3 hidden md:table-cell">
+              <td className="px-4 py-3">
                 <OnlineIndicator
                   lastVisit={
                     u.lastVisit
