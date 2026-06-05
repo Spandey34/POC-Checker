@@ -364,11 +364,11 @@ export default function AdminDashboard() {
           <div className="space-y-5">
             <div className="flex items-center justify-between">
               <h3 className="font-display font-semibold text-navy">
-                Recently Added POCs
+                Recent Activity
               </h3>
 
               <span className="text-sm text-slate-500">
-                {recentActivity.length} recently added
+                {recentActivity.length} History Records
               </span>
             </div>
 

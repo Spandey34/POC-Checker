@@ -159,7 +159,7 @@ export default function UserTable({
               Status
             </th>
 
-            <th className="px-4 py-3 font-display font-semibold text-navy text-xs uppercase tracking-wider hidden md:table-cell">
+            <th className="px-4 py-3 font-display font-semibold text-navy text-xs uppercase tracking-wider">
               Last Active
             </th>
 
