@@ -1,56 +1,31 @@
-const User =
-  require('../models/User');
+const { prisma } = require('../config/db');
 
-const authenticate =
-  async (
-    req,
-    res,
-    next
-  ) => {
+const authenticate = async (req, res, next) => {
+  try {
+    const {userId} = req.auth();
+
+    if (!userId) {
+      return res.status(401).json({ message: 'Unauthorized' });
+    }
+
     try {
-      const userId =
-        req.auth?.userId;
+      const user = await prisma.user.update({
+        where: { clerkId: userId },
+        data: { lastVisit: new Date() },
+      });
 
-      if (!userId) {
-        return res
-          .status(401)
-          .json({
-            message:
-              'Unauthorized',
-          });
-      }
-
-      const user =
-        await User.findOneAndUpdate(
-          {
-            clerkId:
-              userId,
-          },
-          {
-            lastVisit:
-              new Date(),
-          },
-          {
-            new: true,
-          }
-        );
-
-      if (!user) {
-        return res
-          .status(404)
-          .json({
-            message:
-              'User not found in database.',
-          });
-      }
-
-      req.dbUser = user;
-
+      // Maintain MongoDB _id standard for frontend compatibility
+      req.dbUser = { ...user, _id: user.id };
       next();
     } catch (err) {
-      next(err);
+      if (err.code === 'P2025') {
+        return res.status(404).json({ message: 'User not found in database.' });
+      }
+      throw err;
     }
-  };
+  } catch (err) {
+    next(err);
+  }
+};
 
-module.exports =
-  authenticate;
+module.exports = authenticate;

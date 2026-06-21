@@ -2,7 +2,8 @@ const userService = require('../services/userService');
 
 const getMe = async (req, res, next) => {
   try {
-    const user = await userService.getMe(req.auth.userId);
+    const {userId} = req.auth();
+    const user = await userService.getMe(userId);
     res.json(user);
   } catch (err) {
     next(err);
@@ -11,8 +12,16 @@ const getMe = async (req, res, next) => {
 
 const getAllUsers = async (req, res, next) => {
   try {
-    const users = await userService.getAllUsers(req.dbUser.email);
-    res.json(users);
+    const { cursor, limit = 20 } = req.query;
+    
+    // Pass the cursor and parsed limit to the service
+    const userData = await userService.getAllUsers(
+      req.dbUser.email, 
+      cursor, 
+      parseInt(limit, 10)
+    );
+    
+    res.json(userData);
   } catch (err) {
     next(err);
   }

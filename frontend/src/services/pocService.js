@@ -6,8 +6,13 @@ export const userSearch = (q) =>
 export const adminSearch = (q) =>
   api.get('/pocs/admin-search', { params: { q } }).then((r) => r.data);
 
-export const getAllPOCs = (branch) =>
-  api.get('/pocs', { params: branch ? { branch } : {} }).then((r) => r.data);
+export const getAllPOCs = (branch, cursor = 0, limit = 20) => {
+  const params = {};
+  if (branch) params.branch = branch;
+  if (cursor !== null) params.cursor = cursor;
+  if (limit) params.limit = limit;
+  return api.get('/pocs', { params }).then((r) => r.data);
+};
 
 export const getRecentPOCs = () =>
   api.get('/pocs/recent').then((r) => r.data);

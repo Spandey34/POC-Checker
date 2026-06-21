@@ -1,15 +1,13 @@
 const recentService = require('../services/recentService');
 
-const getRecentActivities = async (
-  req,
-  res,
-  next
-) => {
+const getRecentActivities = async (req, res, next) => {
   try {
-    const recent =
-      await recentService.getRecentActivities();
+    const { cursor, limit = 20 } = req.query;
+    
+    // Parse limit to integer to ensure SQL safety
+    const recentData = await recentService.getRecentActivities(cursor, parseInt(limit, 10));
 
-    res.json(recent);
+    res.json(recentData);
   } catch (err) {
     next(err);
   }

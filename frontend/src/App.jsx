@@ -8,6 +8,7 @@ import PendingVerificationPage from './pages/PendingVerificationPage';
 import AdminDashboard  from './pages/AdminDashboard';
 import UserDashboard   from './pages/UserDashboard';
 import NotFoundPage    from './pages/NotFoundPage';
+import { CountProvider } from './context/CountContext';
 
 function MaintenancePage() {
   return (
@@ -29,6 +30,7 @@ export default function App() {
   return (
     <BrowserRouter>
       <UserProvider>
+        <CountProvider>
         <Toaster
           position="top-right"
           toastOptions={{
@@ -50,6 +52,7 @@ export default function App() {
           <Route path="/" element={<Navigate to="/dashboard" replace />} />
           <Route path="*" element={<NotFoundPage />} />
         </Routes>
+        </CountProvider>
       </UserProvider>
     </BrowserRouter>
   );

@@ -1,0 +1,61 @@
+datasource db {
+  provider = "postgresql"
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model User {
+  id         String    @id @default(uuid())
+  clerkId    String    @unique
+  email      String    @unique
+  firstName  String?   @default("")
+  lastName   String?   @default("")
+  role       String    @default("user")
+  isVerified Boolean   @default(false)
+  lastVisit  DateTime?
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+
+  pocs          POC[]
+  recentActions Recent[]
+
+  @@index([clerkId])
+}
+
+model POC {
+  id        String   @id @default(uuid())
+  name      String
+  nameLower String
+  aliases   String[]
+  acronyms  String[]
+  branch    String
+  
+  addedById String
+  addedBy   User     @relation(fields: [addedById], references: [id])
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+
+  @@index([nameLower])
+  @@index([branch])
+}
+
+model Recent {
+  id         String   @id @default(uuid())
+  POCName    String
+  POCBranch  String
+  actionType String
+  
+  POCId      String
+  
+  actionById String
+  actionBy   User     @relation(fields: [actionById], references: [id])
+  
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  @@index([createdAt(sort: Desc)])
+  @@index([POCId])
+}

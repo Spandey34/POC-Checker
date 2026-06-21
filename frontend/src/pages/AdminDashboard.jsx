@@ -5,13 +5,11 @@ import UserTable from "../components/admin/UserTable";
 import POCForm from "../components/admin/POCForm";
 import AdminSearch from "../components/admin/AdminSearch";
 import { BranchBadge } from "../components/common/Badge";
-import LoadingSpinner from "../components/common/LoadingSpinner";
 import { getAllPOCs } from "../services/pocService";
-import { getRecentActivities } from "../services/recentService";
-import { getAllUsers } from "../services/userService";
 import { BRANCHES } from "../config/constants";
 import { useUser } from "@clerk/clerk-react";
 import RecentTab from "../components/admin/RecentTab";
+import { useCount } from "../context/CountContext";
 
 const TABS = ["Search", "POCs", "Recent Activity", "Users"];
 
@@ -33,18 +31,25 @@ function normalizePOC(poc = {}) {
 
 export default function AdminDashboard() {
   const { user } = useUser();
+  const {
+    recentCount,
+    setRecentCount,
+    usersCount,
+    verifiedCount,
+    allPOCs,
+    setAllPOCs,
+  } = useCount();
 
   const [activeTab, setActiveTab] = useState("Search");
 
-  const [allPOCs, setAllPOCs] = useState([]);
   const [pocs, setPocs] = useState([]);
   const [users, setUsers] = useState([]);
+  const [pocCursor, setPocCursor] = useState(0); // 0 acts as our starting offset
+  const [userCursor, setUserCursor] = useState(null);
+  const [recentCursor, setRecentCursor] = useState(null);
+
+  const [branchFilter, setBranchFilter] = useState("CSE");
   const [recentActivity, setRecentActivity] = useState([]);
-
-  const [branchFilter, setBranchFilter] = useState("");
-
-  const [pocLoading, setPocLoading] = useState(true);
-  const [userLoading, setUserLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [editingPOC, setEditingPOC] = useState(null);
 
@@ -55,62 +60,7 @@ export default function AdminDashboard() {
     } catch (err) {
       console.error(err);
     }
-  }, []);
-
-  const loadPOCs = useCallback(async (branch = "") => {
-    setPocLoading(true);
-
-    try {
-      const data = await getAllPOCs(branch);
-      setPocs((data || []).map(normalizePOC));
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setPocLoading(false);
-    }
-  }, []);
-
-  const loadRecentActivity= useCallback(async () => {
-    try {
-      const data = await getRecentActivities();
-      setRecentActivity(data);;
-    } catch (err) {
-      console.error(err);
-    }
-  }, []);
-
-  const loadUsers = useCallback(async () => {
-    setUserLoading(true);
-
-    try {
-      const data = await getAllUsers();
-      setUsers(data || []);
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setUserLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    loadAllPOCs();
-    loadUsers();
-  }, [loadAllPOCs, loadUsers]);
-
-  useEffect(() => {
-    if (activeTab === "POCs") {
-      if (!branchFilter) {
-        setBranchFilter("CSE");
-        loadPOCs("CSE");
-      }
-    }
-  }, [activeTab, branchFilter, loadPOCs]);
-
-  useEffect(() => {
-    if (activeTab === "Recent Activity") {
-      loadRecentActivity();
-    }
-  }, [activeTab, loadRecentActivity]);
+  }, [setAllPOCs]);
 
   const handleEdit = (poc) => {
     setEditingPOC(poc);
@@ -122,15 +72,6 @@ export default function AdminDashboard() {
     setEditingPOC(null);
   };
 
-  const refreshAll = useCallback(async () => {
-    await Promise.all([
-      loadAllPOCs(),
-      loadPOCs(branchFilter || "CSE"),
-      loadRecentActivity(),
-    ]);
-  }, [loadAllPOCs, loadPOCs, loadRecentActivity, branchFilter]);
-
-  const verifiedCount = users.filter((u) => u.isVerified).length;
   const pendingCount = users.filter((u) => !u.isVerified).length;
   const fiveMinsAgo = Date.now() - 5 * 60 * 1000;
   const onlineCount = users.filter(
@@ -161,7 +102,7 @@ export default function AdminDashboard() {
               },
               {
                 label: "Total Users",
-                value: users.length,
+                value: usersCount,
                 icon: "👥",
                 color: "bg-purple-500",
               },
@@ -235,9 +176,9 @@ export default function AdminDashboard() {
 
               <div className="space-y-3">
                 {BRANCHES.map((b) => {
-                  const count = allPOCs.filter((p) => p.branch == b).length;
+                  const count = allPOCs.filter((p) => p == b).length;
                   const pct = allPOCs.length
-                    ? Math.round((count / allPOCs.length) * 100)
+                    ? Math.round((count / allPOCs?.length) * 100)
                     : 0;
 
                   return (
@@ -312,10 +253,7 @@ export default function AdminDashboard() {
                 {BRANCHES.map((b) => (
                   <button
                     key={b}
-                    onClick={() => {
-                      setBranchFilter(b);
-                      loadPOCs(b);
-                    }}
+                    onClick={() => {setBranchFilter(b),setPocs([]),setPocCursor(0)}}
                     className={`text-xs px-3 py-1.5 rounded-lg font-medium border transition-all whitespace-nowrap ${
                       branchFilter === b
                         ? "bg-navy text-white border-navy"
@@ -335,28 +273,26 @@ export default function AdminDashboard() {
               </button>
             </div>
 
-            {pocLoading ? (
-              <LoadingSpinner />
-            ) : (
-              <div className="card p-0 overflow-hidden">
-                <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
-                  <h3 className="font-display font-semibold text-navy text-sm">
-                    {branchFilter ? `${branchFilter} POCs` : "All POCs"} —{" "}
-                    {pocs.length} companies
-                  </h3>
-                </div>
-
-                <div className="p-4">
-                  <POCTable
-                    pocs={pocs}
-                    onEdit={handleEdit}
-                    onRefresh={() => loadPOCs(branchFilter || "CSE")}
-                    showAddedBy
-                    currentUser={user}
-                  />
-                </div>
+            <div className="card p-0 overflow-hidden">
+              <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
+                <h3 className="font-display font-semibold text-navy text-sm">
+                  {branchFilter ? `${branchFilter} POCs` : "All POCs"}
+                </h3>
               </div>
-            )}
+
+              <div className="p-4">
+                <POCTable
+                  pocs={pocs}
+                  setPocs={setPocs}
+                  pocCursor={pocCursor}
+                  setPocCursor={setPocCursor}
+                  branch={branchFilter}
+                  onEdit={handleEdit}
+                  showAddedBy
+                  currentUser={user}
+                />
+              </div>
+            </div>
           </div>
         )}
 
@@ -368,13 +304,18 @@ export default function AdminDashboard() {
               </h3>
 
               <span className="text-sm text-slate-500">
-                {recentActivity.length} History Records
+                {recentCount} History Records
               </span>
             </div>
 
             <div className="card p-0 overflow-hidden">
               <div className="p-4">
-                <RecentTab recentItems={recentActivity} />
+                <RecentTab
+                  recentItems={recentActivity}
+                  setRecentItems={setRecentActivity}
+                  nextCursor={recentCursor}
+                  setNextCursor={setRecentCursor}
+                />
               </div>
             </div>
           </div>
@@ -398,19 +339,17 @@ export default function AdminDashboard() {
               </div>
             </div>
 
-            {userLoading ? (
-              <LoadingSpinner />
-            ) : (
-              <div className="card p-0 overflow-hidden">
-                <div className="p-4">
-                  <UserTable
-                    users={users}
-                    onRefresh={loadUsers}
-                    currentUser={user}
-                  />
-                </div>
+            <div className="card p-0 overflow-hidden">
+              <div className="p-4">
+                <UserTable
+                  users={users}
+                  setUsers={setUsers}
+                  userCursor={userCursor}
+                  setUserCursor={setUserCursor}
+                  currentUser={user}
+                />
               </div>
-            )}
+            </div>
           </div>
         )}
       </div>
@@ -418,7 +357,6 @@ export default function AdminDashboard() {
       <POCForm
         isOpen={showForm}
         onClose={handleCloseForm}
-        onSuccess={refreshAll}
         editing={editingPOC}
       />
     </div>

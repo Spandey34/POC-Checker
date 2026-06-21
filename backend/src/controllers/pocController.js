@@ -1,15 +1,18 @@
 const pocService = require('../services/pocService');
 const recentService = require('../services/recentService');
-const POC = require('../models/POC');
-const { BRANCHES } = require('../models/POC');
-const User = require('../models/User');
+const { BRANCHES } = require('../utils/constants');
+const { prisma } = require('../config/db');
 
 const getBranches = (_req, res) => res.json(BRANCHES);
 
 const getAll = async (req, res, next) => {
   try {
-    const { branch } = req.query;
-    const pocs = await pocService.getAllPOCs(branch);
+    const { branch, cursor = 0, limit = 20 } = req.query;
+    const pocs = await pocService.getAllPOCs(
+      branch, 
+      parseInt(cursor, 10), 
+      parseInt(limit, 10)
+    );
     res.json(pocs);
   } catch (err) {
     next(err);
@@ -21,9 +24,7 @@ const userSearch = async (req, res, next) => {
     const { q } = req.query;
 
     if (!q || !q.trim()) {
-      return res.status(400).json({
-        message: 'Search query is required.',
-      });
+      return res.status(400).json({ message: 'Search query is required.' });
     }
     const scored = await pocService.searchByName(q);
 
@@ -41,9 +42,7 @@ const adminSearch = async (req, res, next) => {
     const { q } = req.query;
 
     if (!q || !q.trim()) {
-      return res.status(400).json({
-        message: 'Search query is required.',
-      });
+      return res.status(400).json({ message: 'Search query is required.' });
     }
 
     const results = await pocService.adminSearch(q);
@@ -58,43 +57,38 @@ const addPOC = async (req, res, next) => {
     const { name, aliases, branch } = req.body;
 
     if (!name || !branch) {
-      return res.status(400).json({
-        message: 'Name and branch are required.',
-      });
+      return res.status(400).json({ message: 'Name and branch are required.' });
     }
 
-    const clerkId = req.auth.userId;
+    const {userId} = req.auth();
 
-    const user = await User.findOne({ clerkId });
+    const clerkId = userId;
+
+    const user = await prisma.user.findUnique({ where: { clerkId } });
     if (!user) {
-      return res.status(404).json({
-        message: 'User not found.',
-      });
+      return res.status(404).json({ message: 'User not found.' });
     }
 
     const poc = await pocService.addPOC({
       name,
       aliases,
       branch,
-      addedBy: user._id,
+      addedBy: user.id, // passing the internal PostgreSQL id
     });
 
     await recentService.createRecent({
-      POCId: poc._id,
+      POCId: poc.id,
       POCName: poc.name,
       POCBranch: poc.branch,
       actionType: 'Added',
-      actionBy: user._id,
+      actionBy: user.id,
     });
 
     res.status(201).json(poc);
   } catch (err) {
     if (err.message.includes('already exists')) {
-      return res.status(409).json({
-        message: err.message,
-      });
+      return res.status(409).json({ message: err.message });
     }
-
     next(err);
   }
 };
@@ -102,13 +96,12 @@ const addPOC = async (req, res, next) => {
 const updatePOC = async (req, res, next) => {
   try {
     const { id } = req.params;
-    const clerkId = req.auth.userId;
+    const {userId} = req.auth();
+    const clerkId = userId;
 
-    const user = await User.findOne({ clerkId });
+    const user = await prisma.user.findUnique({ where: { clerkId } });
     if (!user) {
-      return res.status(404).json({
-        message: 'User not found.',
-      });
+      return res.status(404).json({ message: 'User not found.' });
     }
 
     const getBranchFromEmail = (email = '') => {
@@ -116,47 +109,36 @@ const updatePOC = async (req, res, next) => {
       if (!match) return null;
 
       const code = match[1];
-
       const BRANCH_MAPPINGS = {
-        ec: 'ECE',
-        ee: 'EE',
-        cs: 'CSE',
-        ce: 'CIVIL',
-        cm: 'ECM',
-        mm: 'MME',
-        pi: 'PIE',
-        me: 'MECH',
+        ec: 'ECE', ee: 'EE', cs: 'CSE', ce: 'CIVIL', cm: 'ECM',
+        mm: 'MME', pi: 'PIE', me: 'MECH',
       };
-
       return BRANCH_MAPPINGS[code] || null;
     };
 
     const userBranch = getBranchFromEmail(user.email);
-
     const poc = await pocService.updatePOC(id, req.body);
 
     if (!userBranch) {
-      return res.status(400).json({
-        message: 'Unable to determine user branch from email.',
-      });
+      return res.status(400).json({ message: 'Unable to determine user branch from email.' });
     }
 
     const isTransfer = poc.branch !== userBranch;
 
     if (isTransfer) {
       await recentService.createRecent({
-        POCId: poc._id,
+        POCId: poc.id,
         POCName: poc.name,
         POCBranch: poc.branch,
         actionType: 'Transferred',
-        actionBy: user._id,
+        actionBy: user.id,
       });
     } else {
       await recentService.upsertUpdatedRecent({
-        POCId: poc._id,
+        POCId: poc.id,
         POCName: poc.name,
         POCBranch: poc.branch,
-        actionBy: user._id,
+        actionBy: user.id,
       });
     }
 
@@ -169,35 +151,29 @@ const updatePOC = async (req, res, next) => {
 const deletePOC = async (req, res, next) => {
   try {
     const { id } = req.params;
-    const clerkId = req.auth.userId;
+    const {userId} = req.auth();
+    const clerkId = userId;
 
-    const user = await User.findOne({ clerkId });
+    const user = await prisma.user.findUnique({ where: { clerkId } });
     if (!user) {
-      return res.status(404).json({
-        message: 'User not found.',
-      });
+      return res.status(404).json({ message: 'User not found.' });
     }
 
-    const poc = await POC.findById(id);
+    const poc = await prisma.pOC.findUnique({ where: { id } });
     if (!poc) {
-      return res.status(404).json({
-        message: 'POC not found.',
-      });
+      return res.status(404).json({ message: 'POC not found.' });
     }
-
     await recentService.createRecent({
-      POCId: poc._id,
+      POCId: poc.id,
       POCName: poc.name,
       POCBranch: poc.branch,
       actionType: 'Deleted',
-      actionBy: user._id,
+      actionBy: user.id,
     });
 
     await pocService.deletePOC(id);
 
-    res.json({
-      message: 'POC removed successfully.',
-    });
+    res.json({ message: 'POC removed successfully.' });
   } catch (err) {
     next(err);
   }
