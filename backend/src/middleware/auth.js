@@ -1,28 +1,37 @@
 const { prisma } = require('../config/db');
+const { clerkClient } = require('@clerk/express');
 
 const authenticate = async (req, res, next) => {
   try {
-    const {userId} = req.auth();
+    const { userId } = req.auth();
 
     if (!userId) {
       return res.status(401).json({ message: 'Unauthorized' });
     }
 
-    try {
-      const user = await prisma.user.update({
-        where: { clerkId: userId },
-        data: { lastVisit: new Date() },
-      });
+    const clerkUser = await clerkClient.users.getUser(userId);
 
-      // Maintain MongoDB _id standard for frontend compatibility
-      req.dbUser = { ...user, _id: user.id };
-      next();
-    } catch (err) {
-      if (err.code === 'P2025') {
-        return res.status(404).json({ message: 'User not found in database.' });
-      }
-      throw err;
+    const email = clerkUser.emailAddresses[0]?.emailAddress;
+    if (!email) {
+      return res.status(400).json({ message: 'Email not found for Clerk user.' });
     }
+
+    const user = await prisma.user.upsert({
+      where: { clerkId: userId },
+      update: {
+        lastVisit: new Date(),
+      },
+      create: {
+        clerkId: userId,
+        email: email.toLowerCase(),
+        firstName: clerkUser.firstName || '',
+        lastName: clerkUser.lastName || '',
+        lastVisit: new Date(),
+      },
+    });
+
+    req.dbUser = { ...user, _id: user.id };
+    next();
   } catch (err) {
     next(err);
   }
