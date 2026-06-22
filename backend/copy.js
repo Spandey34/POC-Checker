@@ -1,62 +1,96 @@
 require("dotenv").config();
-
-const { MongoClient } = require("mongodb");
+const { Client } = require("pg");
 
 const sourceUri = process.env.SOURCE_URI;
 const targetUri = process.env.TARGET_URI;
 
 async function copyDatabase() {
-    const sourceClient = new MongoClient(sourceUri);
-    const targetClient = new MongoClient(targetUri);
+    // Initialize PostgreSQL clients
+    const sourceClient = new Client({ connectionString: sourceUri });
+    const targetClient = new Client({ connectionString: targetUri });
 
     try {
         await sourceClient.connect();
         await targetClient.connect();
 
-        console.log("Connected to MongoDB");
+        console.log("Connected to both PostgreSQL databases successfully.");
 
-        const sourceDb = sourceClient.db();
-        const targetDb = targetClient.db();
+        // 1. Fetch all custom base tables in the 'public' schema
+        const tablesResult = await sourceClient.query(`
+            SELECT table_name 
+            FROM information_schema.tables 
+            WHERE table_schema = 'public' AND table_type = 'BASE TABLE';
+        `);
 
-        const collections = await sourceDb.listCollections().toArray();
+        const tables = tablesResult.rows.map(row => row.table_name);
 
-        //console.log("Collections found:", collections);
-
-        if (collections.length === 0) {
-            console.log("No collections found in source database");
+        if (tables.length === 0) {
+            console.log("No tables discovered in the source database.");
             return;
         }
 
-        for (const collectionInfo of collections) {
-            const collectionName = collectionInfo.name;
+        // 2. Iterate through discovered tables and migrate records
+        for (const tableName of tables) {
+            console.log(`\nProcessing table: "${tableName}"`);
 
-            console.log(`Copying collection: ${collectionName}`);
+            // Fetch all records from the source table
+            const sourceData = await sourceClient.query(`SELECT * FROM "${tableName}"`);
+            const rows = sourceData.rows;
+            const fields = sourceData.fields.map(f => f.name);
 
-            const sourceCollection = sourceDb.collection(collectionName);
-            const targetCollection = targetDb.collection(collectionName);
+            console.log(`Found ${rows.length} rows in source table.`);
 
-            const documents = await sourceCollection.find({}).toArray();
+            if (rows.length > 0) {
+                // Clear the target table. 
+                // CASCADE automatically bypasses foreign-key locking orders safely.
+                await targetClient.query(`TRUNCATE TABLE "${tableName}" CASCADE;`);
 
-            console.log(`Found ${documents.length} documents`);
+                // Formulate target column mappings safely wrapped in quotes
+                const columns = fields.map(f => `"${f}"`).join(', ');
 
-            if (documents.length > 0) {
+                // 🚀 SQL OPTIMIZATION: Chunk records to avoid Postgres parameter limits (max 65,535 parameters)
+                const maxParameters = 60000;
+                const chunkSize = Math.floor(maxParameters / fields.length) || 1;
 
-                await targetCollection.deleteMany({});
-                await targetCollection.insertMany(documents);
+                for (let i = 0; i < rows.length; i += chunkSize) {
+                    const chunk = rows.slice(i, i + chunkSize);
+                    const valueLines = [];
+                    const queryValues = [];
+                    let paramIndex = 1;
 
-                console.log(`Copied ${documents.length} documents`);
+                    // Build parameter placeholders dynamically ($1, $2, $3...)
+                    for (const row of chunk) {
+                        const placeholders = [];
+                        for (const field of fields) {
+                            placeholders.push(`$${paramIndex++}`);
+                            queryValues.push(row[field]);
+                        }
+                        valueLines.push(`(${placeholders.join(', ')})`);
+                    }
+
+                    const batchInsertQuery = `
+                        INSERT INTO "${tableName}" (${columns}) 
+                        VALUES ${valueLines.join(', ')};
+                    `;
+
+                    await targetClient.query(batchInsertQuery, queryValues);
+                }
+
+                console.log(`Copied ${rows.length} rows into target table successfully.`);
             } else {
-                console.log(`${collectionName} is empty`);
+                console.log(`"${tableName}" is empty. Skipping rows copy...`);
             }
         }
 
-        console.log("Database copy completed");
+        console.log("\nDatabase migration completed successfully.");
 
     } catch (error) {
-        console.error("Error:", error);
+        console.error("Migration Error:", error);
     } finally {
-        await sourceClient.close();
-        await targetClient.close();
+        // Safe database lifecycle termination cleanup
+        await sourceClient.end();
+        await targetClient.end();
+        console.log("Database connections closed.");
     }
 }
 
