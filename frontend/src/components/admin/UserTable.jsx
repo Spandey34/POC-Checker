@@ -1,7 +1,7 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
 import { StatusBadge } from '../common/Badge';
 import { toggleVerification, getAllUsers, deleteUser } from '../../services/userService';
-import ConfirmDialog from '../common/ConfirmDialog'; // Imported your component here
+import ConfirmDialog from '../common/ConfirmDialog';
 import toast from 'react-hot-toast';
 
 const EMAIL_BRANCH_MAP = {
@@ -52,7 +52,6 @@ export default function UserTable({
   const [loading, setLoading] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
   
-  // 🚀 New configuration state for the active custom confirmation
   const [confirmAction, setConfirmAction] = useState(null);
 
   // Fetch logic encapsulated inside the table component
@@ -119,7 +118,6 @@ export default function UserTable({
     return branch === currentUserBranch;
   });
 
-  // Intermediate steps intercept actions and request confirmation from user
   const requireToggleConfirmation = (user) => {
     setConfirmAction({
       type: user.isVerified ? 'revoke' : 'verify',
@@ -134,12 +132,11 @@ export default function UserTable({
     });
   };
 
-  // Centralized confirmed handler execution loop
   const handleExecuteConfirmedAction = async () => {
     if (!confirmAction) return;
 
     const { type, user } = confirmAction;
-    setConfirmAction(null); // Cleanly shut down dialog layout immediately
+    setConfirmAction(null); 
 
     if (type === 'verify' || type === 'revoke') {
       setToggling(user._id);
@@ -189,7 +186,6 @@ export default function UserTable({
     );
   }
 
-  // Helper variables to compute properties for the verification modal configuration parameters dynamically
   const modalConfig = {
     title: confirmAction?.type === 'delete' ? 'Delete User' : confirmAction?.type === 'revoke' ? 'Revoke Verification' : 'Verify IC',
     message: confirmAction?.type === 'delete' 
@@ -205,14 +201,16 @@ export default function UserTable({
     <>
       <div className="flex flex-col space-y-4">
         <div className="overflow-x-auto rounded-xl border border-slate-200">
-          <table className="w-full text-sm table-fixed min-w-[800px]">
+          {/* 🚀 THE FIX: Changed min-w-[800px] to min-w-[600px] on mobile to maintain solid row background colors */}
+          <table className="w-full text-sm table-fixed min-w-[600px] md:min-w-full">
             <thead>
               <tr className="bg-slate-50 border-b border-slate-200 text-left">
-                <th className="w-[35%] px-4 py-3 font-display font-semibold text-navy text-xs uppercase tracking-wider">User</th>
-                <th className="w-[15%] px-4 py-3 font-display font-semibold text-navy text-xs uppercase tracking-wider">Status</th>
-                <th className="w-[20%] px-4 py-3 font-display font-semibold text-navy text-xs uppercase tracking-wider">Last Active</th>
-                <th className="w-[10%] px-4 py-3 font-display font-semibold text-navy text-xs uppercase tracking-wider hidden md:table-cell">Joined</th>
-                <th className="w-[20%] px-4 py-3 font-display font-semibold text-navy text-xs uppercase tracking-wider">Action</th>
+                {/* Adjusted column layouts proportionally to maximize mobile real estate */}
+                <th className="w-[35%] md:w-[35%] px-4 py-3 font-display font-semibold text-navy text-xs uppercase tracking-wider">User</th>
+                <th className="w-[15%] md:w-[15%] px-4 py-3 font-display font-semibold text-navy text-xs uppercase tracking-wider">Status</th>
+                <th className="w-[25%] md:w-[20%] px-4 py-3 font-display font-semibold text-navy text-xs uppercase tracking-wider">Last Active</th>
+                <th className="md:w-[10%] px-4 py-3 font-display font-semibold text-navy text-xs uppercase tracking-wider hidden md:table-cell">Joined</th>
+                <th className="w-[25%] md:w-[20%] px-4 py-3 font-display font-semibold text-navy text-xs uppercase tracking-wider">Action</th>
               </tr>
             </thead>
 
@@ -261,7 +259,7 @@ export default function UserTable({
                           disabled={isProcessing}
                           className={`text-xs px-3 py-1.5 rounded-lg font-medium transition-colors disabled:opacity-50 whitespace-nowrap ${
                             u.isVerified
-                              ? 'bg-amber-50 text-amber-600 hover:bg-amber-100'
+                              ? 'bg-amber-50 text-amber-600 hover:bg-amber-100' 
                               : 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100'
                           }`}
                         >
@@ -299,7 +297,6 @@ export default function UserTable({
         )}
       </div>
 
-      {/* 🚀 Render the modern ConfirmDialog component down here */}
       <ConfirmDialog
         isOpen={!!confirmAction}
         onClose={() => setConfirmAction(null)}

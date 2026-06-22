@@ -194,7 +194,7 @@ export default function AdminDashboard() {
           </div>
 
           <div className="mt-6 overflow-x-auto scrollbar-hide">
-            <div className="flex min-w-max gap-2 pb-2">
+            <div className="flex w-full justify-between sm:w-max sm:justify-start gap-2 pb-2">
               {TABS.map((tab) => (
                 <button
                   key={tab}
@@ -207,7 +207,7 @@ export default function AdminDashboard() {
                 >
                   {tab}
 
-                  {tab === "Users" && pendingCount > 0 && (
+                  {tab === "ICs" && pendingCount > 0 && (
                     <span className="ml-1.5 bg-amber-400 text-navy text-[10px] font-bold px-1.5 py-0.5 rounded-full">
                       {pendingCount}
                     </span>

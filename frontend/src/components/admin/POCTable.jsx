@@ -50,7 +50,6 @@ export default function POCTable({
     }
   };
 
-  // Only show full loading frame if we have absolutely no records rendered yet
   if (loading && pocs.length === 0) {
     return (
       <div className="text-center py-16 text-slate-400">
@@ -71,24 +70,23 @@ export default function POCTable({
   return (
     <>
       <div className="overflow-x-auto rounded-xl border border-slate-200">
-        <table className="w-full text-sm table-fixed min-w-[800px]">
+        {/* 🚀 THE FIX: Changed min-w-full to min-w-[550px] to keep background colors locked during horizontal scroll */}
+        <table className="w-full text-sm table-fixed min-w-[550px] md:min-w-full">
           <thead>
             <tr className="bg-slate-50 border-b border-slate-200 text-left">
-              <th className="w-[30%] px-4 py-3 font-display font-semibold text-navy text-xs uppercase tracking-wider">
+              {/* Adjusted percentage proportions to align perfectly with the 550px container width */}
+              <th className="w-[40%] md:w-[30%] px-4 py-3 font-display font-semibold text-navy text-xs uppercase tracking-wider">
                 Company
               </th>
-              <th className="w-[15%] px-4 py-3 font-display font-semibold text-navy text-xs uppercase tracking-wider">
-                Branch
-              </th>
               {showAddedBy && (
-                <th className="w-[20%] px-4 py-3 font-display font-semibold text-navy text-xs uppercase tracking-wider">
+                <th className="w-[35%] md:w-[20%] px-4 py-3 font-display font-semibold text-navy text-xs uppercase tracking-wider">
                   Added By
                 </th>
               )}
-              <th className="w-[25%] px-4 py-3 font-display font-semibold text-navy text-xs uppercase tracking-wider hidden md:table-cell">
+              <th className="md:w-[25%] px-4 py-3 font-display font-semibold text-navy text-xs uppercase tracking-wider hidden md:table-cell">
                 Aliases
               </th>
-              <th className="w-[10%] px-4 py-3 font-display font-semibold text-navy text-xs uppercase tracking-wider">
+              <th className="w-[25%] md:w-[25%] px-4 py-3 font-display font-semibold text-navy text-xs uppercase tracking-wider">
                 Actions
               </th>
             </tr>
@@ -102,7 +100,6 @@ export default function POCTable({
                   currentUser?.primaryEmailAddress?.emailAddress?.slice(6, 8)
                 ];
                 
-              // Attach ref query targeting point strictly on the final item of arrays array list
               const isLastElement = pocs.length === index + 1;
 
               return (
@@ -123,13 +120,9 @@ export default function POCTable({
                     </p>
                   </td>
 
-                  <td className="px-4 py-3">
-                    <BranchBadge branch={poc.branch} />
-                  </td>
-
                   {showAddedBy && (
                     <td className="px-4 py-3">
-                      <div className="space-y-1">
+                      <div className="space-y-0.5 min-w-0">
                         <p
                           className="text-sm font-medium text-navy truncate"
                           title={poc.userId?.firstName}
@@ -164,19 +157,19 @@ export default function POCTable({
                   </td>
 
                   <td className="px-4 py-3">
-                    <div className="flex gap-2 opacity-70 group-hover:opacity-100 transition-opacity whitespace-nowrap">
+                    <div className="flex items-center gap-1.5 opacity-70 group-hover:opacity-100 transition-opacity whitespace-nowrap">
                       {canModify ? (
                         <>
                           <button
                             onClick={() => onEdit(poc)}
-                            className="text-xs px-3 py-1.5 rounded-lg bg-navy/5 text-navy hover:bg-navy/10 font-medium transition-colors"
+                            className="text-xs px-2.5 py-1.5 rounded-lg bg-navy/5 text-navy hover:bg-navy/10 font-medium transition-colors"
                           >
                             Edit
                           </button>
 
                           <button
                             onClick={() => setDeleting(poc)}
-                            className="text-xs px-3 py-1.5 rounded-lg bg-red-50 text-red-600 hover:bg-red-100 font-medium transition-colors"
+                            className="text-xs px-2.5 py-1.5 rounded-lg bg-red-50 text-red-600 hover:bg-red-100 font-medium transition-colors"
                           >
                             Remove
                           </button>

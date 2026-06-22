@@ -105,16 +105,17 @@ export default function RecentTab({recentItems, setRecentItems, nextCursor, setN
   return (
     <div className="flex flex-col space-y-4">
       <div className="overflow-x-auto rounded-xl border border-slate-200">
-        <table className="w-full text-sm table-fixed min-w-[800px]">
+        {/* 🚀 THE FIX: Changed min-w-[800px] to min-w-[600px] on mobile to optimize space while retaining color bounds */}
+        <table className="w-full text-sm table-fixed min-w-[600px] md:min-w-full">
           <thead>
             <tr className="bg-slate-50 border-b border-slate-200 text-left">
               <th className="w-[25%] px-4 py-3 font-display font-semibold text-navy text-xs uppercase tracking-wider">
                 Company
               </th>
-              <th className="w-[15%] px-4 py-3 font-display font-semibold text-navy text-xs uppercase tracking-wider">
+              <th className="w-[18%] px-4 py-3 font-display font-semibold text-navy text-xs uppercase tracking-wider">
                 Action
               </th>
-              <th className="w-[40%] px-4 py-3 font-display font-semibold text-navy text-xs uppercase tracking-wider">
+              <th className="w-[37%] px-4 py-3 font-display font-semibold text-navy text-xs uppercase tracking-wider">
                 Action By
               </th>
               <th className="w-[20%] px-4 py-3 font-display font-semibold text-navy text-xs uppercase tracking-wider text-right">
@@ -124,7 +125,7 @@ export default function RecentTab({recentItems, setRecentItems, nextCursor, setN
           </thead>
 
           <tbody className="divide-y divide-slate-100">
-            {recentItems.map((item) => {
+            {recentItems.map((item, index) => {
               const user = item.actionBy || {};
               const userBranch = getBranchFromEmail(user.email);
 
@@ -137,9 +138,12 @@ export default function RecentTab({recentItems, setRecentItems, nextCursor, setN
                   ? `${user.firstName || ''} ${user.lastName || ''}`.trim()
                   : 'N/A';
 
+              const isLastElement = recentItems.length === index + 1;
+
               return (
                 <tr
                   key={item._id}
+                  ref={isLastElement ? lastElementRef : null}
                   className="hover:bg-slate-50/50 transition-colors"
                 >
                   <td className="px-4 py-3">
@@ -162,7 +166,7 @@ export default function RecentTab({recentItems, setRecentItems, nextCursor, setN
                   </td>
 
                   <td className="px-4 py-3">
-                    <div className="space-y-1">
+                    <div className="space-y-0.5 min-w-0">
                       <p 
                         className="text-sm font-medium text-navy truncate" 
                         title={fullName}
@@ -204,7 +208,7 @@ export default function RecentTab({recentItems, setRecentItems, nextCursor, setN
 
       {/* Invisible loader element that triggers the next fetch when scrolled into view */}
       {nextCursor && (
-        <div ref={lastElementRef} className="flex justify-center py-6">
+        <div className="flex justify-center py-6">
           <div className="flex items-center space-x-2 text-slate-400">
             <svg className="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
               <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
