@@ -1,6 +1,7 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
 import { StatusBadge } from '../common/Badge';
 import { toggleVerification, getAllUsers, deleteUser } from '../../services/userService';
+import ConfirmDialog from '../common/ConfirmDialog'; // Imported your component here
 import toast from 'react-hot-toast';
 
 const EMAIL_BRANCH_MAP = {
@@ -50,6 +51,9 @@ export default function UserTable({
   const [deleting, setDeleting] = useState(null);
   const [loading, setLoading] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
+  
+  // 🚀 New configuration state for the active custom confirmation
+  const [confirmAction, setConfirmAction] = useState(null);
 
   // Fetch logic encapsulated inside the table component
   const fetchUsers = useCallback(async (cursor = null) => {
@@ -106,9 +110,7 @@ export default function UserTable({
   const currentUserBranch = EMAIL_BRANCH_MAP[currentUserCode];
 
   const filteredUsers = users.filter((u) => {
-    // Hide admins
     if (u.role === 'admin') return false;
-    // Prevent self toggle
     if (u.email === currentUser?.email) return false;
 
     const code = u.email?.slice(6, 8)?.toLowerCase();
@@ -117,43 +119,56 @@ export default function UserTable({
     return branch === currentUserBranch;
   });
 
-  const handleToggle = async (user) => {
-    setToggling(user._id);
-    try {
-      await toggleVerification(user._id);
-      
-      toast.success(
-        user.isVerified ? `${user.firstName} revoked` : `${user.firstName} verified`
-      );
-      
-      // Optimistic local state update to preserve scroll position
-      setUsers((prev) =>
-        prev.map((u) =>
-          u._id === user._id ? { ...u, isVerified: !u.isVerified } : u
-        )
-      );
-    } catch {
-      toast.error('Failed to update status');
-    } finally {
-      setToggling(null);
-    }
+  // Intermediate steps intercept actions and request confirmation from user
+  const requireToggleConfirmation = (user) => {
+    setConfirmAction({
+      type: user.isVerified ? 'revoke' : 'verify',
+      user,
+    });
   };
 
-  const handleDelete = async (user) => {
-    // Basic confirmation to prevent accidental clicks
-    if (!window.confirm(`Are you sure you want to delete ${user.firstName}?`)) return;
-    
-    setDeleting(user._id);
-    try {
-      await deleteUser(user._id);
-      toast.success(`${user.firstName} has been deleted`);
-      
-      // Optimistically remove the user from the table
-      setUsers((prev) => prev.filter((u) => u._id !== user._id));
-    } catch {
-      toast.error('Failed to delete user');
-    } finally {
-      setDeleting(null);
+  const requireDeleteConfirmation = (user) => {
+    setConfirmAction({
+      type: 'delete',
+      user,
+    });
+  };
+
+  // Centralized confirmed handler execution loop
+  const handleExecuteConfirmedAction = async () => {
+    if (!confirmAction) return;
+
+    const { type, user } = confirmAction;
+    setConfirmAction(null); // Cleanly shut down dialog layout immediately
+
+    if (type === 'verify' || type === 'revoke') {
+      setToggling(user._id);
+      try {
+        await toggleVerification(user._id);
+        toast.success(
+          type === 'revoke' ? `${user.firstName} revoked` : `${user.firstName} verified`
+        );
+        setUsers((prev) =>
+          prev.map((u) => (u._id === user._id ? { ...u, isVerified: !u.isVerified } : u))
+        );
+      } catch {
+        toast.error('Failed to update status');
+      } finally {
+        setToggling(null);
+      }
+    }
+
+    if (type === 'delete') {
+      setDeleting(user._id);
+      try {
+        await deleteUser(user._id);
+        toast.success(`${user.firstName} has been deleted`);
+        setUsers((prev) => prev.filter((u) => u._id !== user._id));
+      } catch {
+        toast.error('Failed to delete user');
+      } finally {
+        setDeleting(null);
+      }
     }
   };
 
@@ -174,104 +189,126 @@ export default function UserTable({
     );
   }
 
+  // Helper variables to compute properties for the verification modal configuration parameters dynamically
+  const modalConfig = {
+    title: confirmAction?.type === 'delete' ? 'Delete User' : confirmAction?.type === 'revoke' ? 'Revoke Verification' : 'Verify IC',
+    message: confirmAction?.type === 'delete' 
+      ? `Are you sure you want to completely remove ${confirmAction?.user?.firstName} ${confirmAction?.user?.lastName}? This action cannot be undone.`
+      : confirmAction?.type === 'revoke'
+      ? `Are you sure you want to remove portal access for ${confirmAction?.user?.firstName}?`
+      : `Allow portal access to ${confirmAction?.user?.firstName}?`,
+    confirmLabel: confirmAction?.type === 'delete' ? 'Delete' : confirmAction?.type === 'revoke' ? 'Revoke' : 'Verify',
+    danger: confirmAction?.type === 'delete' || confirmAction?.type === 'revoke',
+  };
+
   return (
-    <div className="flex flex-col space-y-4">
-      <div className="overflow-x-auto rounded-xl border border-slate-200">
-        <table className="w-full text-sm table-fixed min-w-[800px]">
-          <thead>
-            <tr className="bg-slate-50 border-b border-slate-200 text-left">
-              <th className="w-[35%] px-4 py-3 font-display font-semibold text-navy text-xs uppercase tracking-wider">User</th>
-              <th className="w-[15%] px-4 py-3 font-display font-semibold text-navy text-xs uppercase tracking-wider">Status</th>
-              <th className="w-[20%] px-4 py-3 font-display font-semibold text-navy text-xs uppercase tracking-wider">Last Active</th>
-              <th className="w-[10%] px-4 py-3 font-display font-semibold text-navy text-xs uppercase tracking-wider hidden md:table-cell">Joined</th>
-              {/* Increased width slightly to fit both buttons comfortably */}
-              <th className="w-[20%] px-4 py-3 font-display font-semibold text-navy text-xs uppercase tracking-wider">Action</th>
-            </tr>
-          </thead>
+    <>
+      <div className="flex flex-col space-y-4">
+        <div className="overflow-x-auto rounded-xl border border-slate-200">
+          <table className="w-full text-sm table-fixed min-w-[800px]">
+            <thead>
+              <tr className="bg-slate-50 border-b border-slate-200 text-left">
+                <th className="w-[35%] px-4 py-3 font-display font-semibold text-navy text-xs uppercase tracking-wider">User</th>
+                <th className="w-[15%] px-4 py-3 font-display font-semibold text-navy text-xs uppercase tracking-wider">Status</th>
+                <th className="w-[20%] px-4 py-3 font-display font-semibold text-navy text-xs uppercase tracking-wider">Last Active</th>
+                <th className="w-[10%] px-4 py-3 font-display font-semibold text-navy text-xs uppercase tracking-wider hidden md:table-cell">Joined</th>
+                <th className="w-[20%] px-4 py-3 font-display font-semibold text-navy text-xs uppercase tracking-wider">Action</th>
+              </tr>
+            </thead>
 
-          <tbody className="divide-y divide-slate-100">
-            {filteredUsers.map((u) => {
-              const fullName = `${u.firstName || ''} ${u.lastName || ''}`.trim();
-              const isProcessing = toggling === u._id || deleting === u._id;
-              
-              return (
-                <tr key={u._id} className="hover:bg-slate-50/50 transition-colors group">
-                  <td className="px-4 py-3">
-                    <div className="flex items-center gap-3 overflow-hidden">
-                      <div className="w-8 h-8 rounded-full bg-navy/10 flex items-center justify-center flex-shrink-0">
-                        <span className="text-navy font-display font-bold text-xs">
-                          {u.firstName?.[0] || ''}
-                          {u.lastName?.[0] || ''}
-                        </span>
+            <tbody className="divide-y divide-slate-100">
+              {filteredUsers.map((u) => {
+                const fullName = `${u.firstName || ''} ${u.lastName || ''}`.trim();
+                const isProcessing = toggling === u._id || deleting === u._id;
+                
+                return (
+                  <tr key={u._id} className="hover:bg-slate-50/50 transition-colors group">
+                    <td className="px-4 py-3">
+                      <div className="flex items-center gap-3 overflow-hidden">
+                        <div className="w-8 h-8 rounded-full bg-navy/10 flex items-center justify-center flex-shrink-0">
+                          <span className="text-navy font-display font-bold text-xs">
+                            {u.firstName?.[0] || ''}
+                            {u.lastName?.[0] || ''}
+                          </span>
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <p className="font-body font-semibold text-navy truncate" title={fullName}>
+                            {fullName || 'Unknown User'}
+                          </p>
+                          <p className="text-xs text-slate-400 truncate" title={u.email}>
+                            {u.email || 'N/A'}
+                          </p>
+                        </div>
                       </div>
-                      <div className="min-w-0 flex-1">
-                        <p className="font-body font-semibold text-navy truncate" title={fullName}>
-                          {fullName || 'Unknown User'}
-                        </p>
-                        <p className="text-xs text-slate-400 truncate" title={u.email}>
-                          {u.email || 'N/A'}
-                        </p>
-                      </div>
-                    </div>
-                  </td>
+                    </td>
 
-                  <td className="px-4 py-3">
-                    <StatusBadge verified={u.isVerified} />
-                  </td>
+                    <td className="px-4 py-3">
+                      <StatusBadge verified={u.isVerified} />
+                    </td>
 
-                  <td className="px-4 py-3">
-                    <OnlineIndicator lastVisit={u.lastVisit} />
-                  </td>
+                    <td className="px-4 py-3">
+                      <OnlineIndicator lastVisit={u.lastVisit} />
+                    </td>
 
-                  <td className="px-4 py-3 hidden md:table-cell text-xs text-slate-500 whitespace-nowrap">
-                    {u.createdAt ? new Date(u.createdAt).toLocaleDateString() : 'N/A'}
-                  </td>
+                    <td className="px-4 py-3 hidden md:table-cell text-xs text-slate-500 whitespace-nowrap">
+                      {u.createdAt ? new Date(u.createdAt).toLocaleDateString() : 'N/A'}
+                    </td>
 
-                  <td className="px-4 py-3">
-                    {/* Wrapped the buttons in a flex container */}
-                    <div className="flex items-center gap-2">
-                      <button
-                        onClick={() => handleToggle(u)}
-                        disabled={isProcessing}
-                        className={`text-xs px-3 py-1.5 rounded-lg font-medium transition-colors disabled:opacity-50 whitespace-nowrap ${
-                          u.isVerified
-                            ? 'bg-amber-50 text-amber-600 hover:bg-amber-100' // Swapped revoke to amber so Delete can be the primary red action
-                            : 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100'
-                        }`}
-                      >
-                        {toggling === u._id ? '…' : u.isVerified ? 'Revoke' : 'Verify'}
-                      </button>
-
-                      {/* Render Delete button only if the user is not verified */}
-                      {!u.isVerified && (
+                    <td className="px-4 py-3">
+                      <div className="flex items-center gap-2">
                         <button
-                          onClick={() => handleDelete(u)}
+                          onClick={() => requireToggleConfirmation(u)}
                           disabled={isProcessing}
-                          className="text-xs px-3 py-1.5 rounded-lg font-medium bg-red-50 text-red-600 hover:bg-red-100 transition-colors disabled:opacity-50 whitespace-nowrap"
+                          className={`text-xs px-3 py-1.5 rounded-lg font-medium transition-colors disabled:opacity-50 whitespace-nowrap ${
+                            u.isVerified
+                              ? 'bg-amber-50 text-amber-600 hover:bg-amber-100'
+                              : 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100'
+                          }`}
                         >
-                          {deleting === u._id ? '…' : 'Delete'}
+                          {toggling === u._id ? '…' : u.isVerified ? 'Revoke' : 'Verify'}
                         </button>
-                      )}
-                    </div>
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
+
+                        {!u.isVerified && (
+                          <button
+                            onClick={() => requireDeleteConfirmation(u)}
+                            disabled={isProcessing}
+                            className="text-xs px-3 py-1.5 rounded-lg font-medium bg-red-50 text-red-600 hover:bg-red-100 transition-colors disabled:opacity-50 whitespace-nowrap"
+                          >
+                            {deleting === u._id ? '…' : 'Delete'}
+                          </button>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+
+        {userCursor && (
+          <div ref={lastElementRef} className="flex justify-center py-6">
+            <div className="flex items-center space-x-2 text-slate-400">
+              <svg className="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+              </svg>
+              <span className="font-body text-sm font-medium animate-pulse">Loading more users...</span>
+            </div>
+          </div>
+        )}
       </div>
 
-      {userCursor && (
-        <div ref={lastElementRef} className="flex justify-center py-6">
-          <div className="flex items-center space-x-2 text-slate-400">
-            <svg className="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-            </svg>
-            <span className="font-body text-sm font-medium animate-pulse">Loading more users...</span>
-          </div>
-        </div>
-      )}
-    </div>
+      {/* 🚀 Render the modern ConfirmDialog component down here */}
+      <ConfirmDialog
+        isOpen={!!confirmAction}
+        onClose={() => setConfirmAction(null)}
+        onConfirm={handleExecuteConfirmedAction}
+        title={modalConfig.title}
+        message={modalConfig.message}
+        confirmLabel={modalConfig.confirmLabel}
+        danger={modalConfig.danger}
+      />
+    </>
   );
 }

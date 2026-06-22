@@ -126,5 +126,6 @@ module.exports = {
   getAllUsers, 
   toggleVerification, 
   getMe, 
-  isAllowedEmail 
+  isAllowedEmail,
+  deleteUser,
 };
