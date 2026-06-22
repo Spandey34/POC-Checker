@@ -44,7 +44,7 @@ const getRecentActivities = async (cursor, limit = 20) => {
           'lastName', u."lastName"
         ) AS "actionBy"
       FROM "Recent" r
-      JOIN "User" u ON r."actionById" = u.id
+      LEFT JOIN "User" u ON r."actionById" = u.id
       ORDER BY r."createdAt" DESC
       LIMIT ${limit}
     `;

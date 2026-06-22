@@ -13,3 +13,6 @@ export const getAllUsers = async (cursor = null, limit = 20) => {
 
 export const toggleVerification = (userId) =>
   api.patch(`/users/${userId}/toggle-verify`).then((r) => r.data);
+
+export const deleteUser = (userId) =>
+  api.delete(`/users/${userId}`).then((r) => r.data);

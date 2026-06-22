@@ -112,6 +112,15 @@ const getMe = async (clerkId) => {
   return formatUser(user);
 };
 
+const deleteUser = async (userId) => {
+  const user = await prisma.user.findUnique({ where: { id: userId } });
+  if (!user) throw new Error('User not found');
+  if (user.role === 'admin') throw new Error('Cannot delete admin user');
+
+  await prisma.user.delete({ where: { id: userId } });
+  return { message: 'User deleted successfully' };
+}
+
 module.exports = { 
   upsertUserFromClerk, 
   getAllUsers, 

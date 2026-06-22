@@ -34,6 +34,7 @@ export default function RecentTab({recentItems, setRecentItems, nextCursor, setN
   const { recentCount, setRecentCount } = useCount();
   const [loading, setLoading] = useState(recentItems.length===0);
   const [loadingMore, setLoadingMore] = useState(false);
+  
   // Reference for the IntersectionObserver to watch
   const observer = useRef();
 
@@ -63,12 +64,10 @@ export default function RecentTab({recentItems, setRecentItems, nextCursor, setN
 
   // Initial load
   useEffect(() => {
-    if(nextCursor!==null)fetchActivities(nextCursor);
+    if(nextCursor!==null) fetchActivities(nextCursor);
     else if(recentItems.length === 0) fetchActivities();
   }, []);
   
-  
-
   // Set up the IntersectionObserver to trigger loading when the bottom is reached
   const lastElementRef = useCallback(
     (node) => {
@@ -106,19 +105,19 @@ export default function RecentTab({recentItems, setRecentItems, nextCursor, setN
   return (
     <div className="flex flex-col space-y-4">
       <div className="overflow-x-auto rounded-xl border border-slate-200">
-        <table className="w-full text-sm">
+        <table className="w-full text-sm table-fixed min-w-[800px]">
           <thead>
             <tr className="bg-slate-50 border-b border-slate-200 text-left">
-              <th className="px-4 py-3 font-display font-semibold text-navy text-xs uppercase tracking-wider">
+              <th className="w-[25%] px-4 py-3 font-display font-semibold text-navy text-xs uppercase tracking-wider">
                 Company
               </th>
-              <th className="px-4 py-3 font-display font-semibold text-navy text-xs uppercase tracking-wider">
+              <th className="w-[15%] px-4 py-3 font-display font-semibold text-navy text-xs uppercase tracking-wider">
                 Action
               </th>
-              <th className="px-4 py-3 font-display font-semibold text-navy text-xs uppercase tracking-wider">
+              <th className="w-[40%] px-4 py-3 font-display font-semibold text-navy text-xs uppercase tracking-wider">
                 Action By
               </th>
-              <th className="px-4 py-3 font-display font-semibold text-navy text-xs uppercase tracking-wider text-right">
+              <th className="w-[20%] px-4 py-3 font-display font-semibold text-navy text-xs uppercase tracking-wider text-right">
                 Time
               </th>
             </tr>
@@ -134,20 +133,27 @@ export default function RecentTab({recentItems, setRecentItems, nextCursor, setN
                   ? `${userBranch} → ${item.POCBranch || 'Current Branch'}`
                   : item.POCBranch;
 
+              const fullName = user.firstName || user.lastName
+                  ? `${user.firstName || ''} ${user.lastName || ''}`.trim()
+                  : 'N/A';
+
               return (
                 <tr
                   key={item._id}
                   className="hover:bg-slate-50/50 transition-colors"
                 >
                   <td className="px-4 py-3">
-                    <p className="font-body font-semibold text-navy">
+                    <p 
+                      className="font-body font-semibold text-navy truncate" 
+                      title={item.POCName || 'N/A'}
+                    >
                       {item.POCName || 'N/A'}
                     </p>
                   </td>
 
                   <td className="px-4 py-3">
                     <span
-                      className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium ${getActionBadgeClass(
+                      className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium whitespace-nowrap ${getActionBadgeClass(
                         item.actionType
                       )}`}
                     >
@@ -157,26 +163,33 @@ export default function RecentTab({recentItems, setRecentItems, nextCursor, setN
 
                   <td className="px-4 py-3">
                     <div className="space-y-1">
-                      <p className="text-sm font-medium text-navy">
-                        {user.firstName || user.lastName
-                          ? `${user.firstName || ''} ${user.lastName || ''}`.trim()
-                          : 'N/A'}
+                      <p 
+                        className="text-sm font-medium text-navy truncate" 
+                        title={fullName}
+                      >
+                        {fullName}
                       </p>
 
-                      <p className="text-xs text-slate-500">
+                      <p 
+                        className="text-xs text-slate-500 truncate"
+                        title={item.actionType === 'Transferred' ? `Branch: ${transferLabel}` : `Branch: ${userBranch}`}
+                      >
                         {item.actionType === 'Transferred'
                           ? `Branch: ${transferLabel}`
                           : `Branch: ${userBranch}`}
                       </p>
 
-                      <p className="text-xs text-slate-400">
+                      <p 
+                        className="text-xs text-slate-400 truncate"
+                        title={user.email || 'N/A'}
+                      >
                         {user.email || 'N/A'}
                       </p>
                     </div>
                   </td>
 
                   <td className="px-4 py-3 text-right">
-                    <p className="text-xs text-slate-500">
+                    <p className="text-xs text-slate-500 whitespace-nowrap">
                       {item.createdAt
                         ? new Date(item.createdAt).toLocaleString()
                         : 'N/A'}

@@ -118,7 +118,7 @@ const getAllPOCs = async (branch, cursor = 0, limit = 20) => {
           'lastName', u."lastName"
         ) AS "addedBy"
       FROM "POC" p
-      JOIN "User" u ON p."addedById" = u.id
+      LEFT JOIN "User" u ON p."addedById" = u.id
       WHERE p.branch = ${branch}
       ORDER BY p."nameLower" ASC
       LIMIT ${limit} OFFSET ${cursor}

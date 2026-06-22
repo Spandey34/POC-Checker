@@ -1,6 +1,6 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
 import { StatusBadge } from '../common/Badge';
-import { toggleVerification, getAllUsers } from '../../services/userService';
+import { toggleVerification, getAllUsers, deleteUser } from '../../services/userService';
 import toast from 'react-hot-toast';
 
 const EMAIL_BRANCH_MAP = {
@@ -15,21 +15,25 @@ const EMAIL_BRANCH_MAP = {
 };
 
 function OnlineIndicator({ lastVisit }) {
-  if (!lastVisit) return <span className="text-slate-300 text-xs">Never</span>;
+  if (!lastVisit) return <span className="text-slate-300 text-xs whitespace-nowrap">Never</span>;
 
   const diff = Date.now() - new Date(lastVisit).getTime();
   const mins = diff / 60000;
   const isOnline = mins < 5;
+  const timeString = new Date(lastVisit).toLocaleString();
 
   return (
     <div className="flex items-center gap-1.5">
       <span
-        className={`w-2 h-2 rounded-full ${
+        className={`w-2 h-2 rounded-full flex-shrink-0 ${
           isOnline ? 'bg-emerald-400 animate-pulse-dot' : 'bg-slate-300'
         }`}
       />
-      <span className="text-xs text-slate-500">
-        {isOnline ? 'Online' : new Date(lastVisit).toLocaleString()}
+      <span 
+        className="text-xs text-slate-500 truncate" 
+        title={isOnline ? 'Online' : timeString}
+      >
+        {isOnline ? 'Online' : timeString}
       </span>
     </div>
   );
@@ -43,6 +47,7 @@ export default function UserTable({
   currentUser,
 }) {
   const [toggling, setToggling] = useState(null);
+  const [deleting, setDeleting] = useState(null);
   const [loading, setLoading] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
 
@@ -134,6 +139,24 @@ export default function UserTable({
     }
   };
 
+  const handleDelete = async (user) => {
+    // Basic confirmation to prevent accidental clicks
+    if (!window.confirm(`Are you sure you want to delete ${user.firstName}?`)) return;
+    
+    setDeleting(user._id);
+    try {
+      await deleteUser(user._id);
+      toast.success(`${user.firstName} has been deleted`);
+      
+      // Optimistically remove the user from the table
+      setUsers((prev) => prev.filter((u) => u._id !== user._id));
+    } catch {
+      toast.error('Failed to delete user');
+    } finally {
+      setDeleting(null);
+    }
+  };
+
   if (loading) {
     return (
       <div className="text-center py-16 text-slate-400">
@@ -154,69 +177,90 @@ export default function UserTable({
   return (
     <div className="flex flex-col space-y-4">
       <div className="overflow-x-auto rounded-xl border border-slate-200">
-        <table className="w-full text-sm">
+        <table className="w-full text-sm table-fixed min-w-[800px]">
           <thead>
             <tr className="bg-slate-50 border-b border-slate-200 text-left">
-              <th className="px-4 py-3 font-display font-semibold text-navy text-xs uppercase tracking-wider">User</th>
-              <th className="px-4 py-3 font-display font-semibold text-navy text-xs uppercase tracking-wider">Status</th>
-              <th className="px-4 py-3 font-display font-semibold text-navy text-xs uppercase tracking-wider">Last Active</th>
-              <th className="px-4 py-3 font-display font-semibold text-navy text-xs uppercase tracking-wider hidden md:table-cell">Joined</th>
-              <th className="px-4 py-3 font-display font-semibold text-navy text-xs uppercase tracking-wider">Action</th>
+              <th className="w-[35%] px-4 py-3 font-display font-semibold text-navy text-xs uppercase tracking-wider">User</th>
+              <th className="w-[15%] px-4 py-3 font-display font-semibold text-navy text-xs uppercase tracking-wider">Status</th>
+              <th className="w-[20%] px-4 py-3 font-display font-semibold text-navy text-xs uppercase tracking-wider">Last Active</th>
+              <th className="w-[10%] px-4 py-3 font-display font-semibold text-navy text-xs uppercase tracking-wider hidden md:table-cell">Joined</th>
+              {/* Increased width slightly to fit both buttons comfortably */}
+              <th className="w-[20%] px-4 py-3 font-display font-semibold text-navy text-xs uppercase tracking-wider">Action</th>
             </tr>
           </thead>
 
           <tbody className="divide-y divide-slate-100">
-            {filteredUsers.map((u) => (
-              <tr key={u._id} className="hover:bg-slate-50/50 transition-colors group">
-                <td className="px-4 py-3">
-                  <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-full bg-navy/10 flex items-center justify-center flex-shrink-0">
-                      <span className="text-navy font-display font-bold text-xs">
-                        {u.firstName?.[0]}
-                        {u.lastName?.[0]}
-                      </span>
+            {filteredUsers.map((u) => {
+              const fullName = `${u.firstName || ''} ${u.lastName || ''}`.trim();
+              const isProcessing = toggling === u._id || deleting === u._id;
+              
+              return (
+                <tr key={u._id} className="hover:bg-slate-50/50 transition-colors group">
+                  <td className="px-4 py-3">
+                    <div className="flex items-center gap-3 overflow-hidden">
+                      <div className="w-8 h-8 rounded-full bg-navy/10 flex items-center justify-center flex-shrink-0">
+                        <span className="text-navy font-display font-bold text-xs">
+                          {u.firstName?.[0] || ''}
+                          {u.lastName?.[0] || ''}
+                        </span>
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p className="font-body font-semibold text-navy truncate" title={fullName}>
+                          {fullName || 'Unknown User'}
+                        </p>
+                        <p className="text-xs text-slate-400 truncate" title={u.email}>
+                          {u.email || 'N/A'}
+                        </p>
+                      </div>
                     </div>
-                    <div>
-                      <p className="font-body font-semibold text-navy">
-                        {u.firstName} {u.lastName}
-                      </p>
-                      <p className="text-xs text-slate-400">{u.email}</p>
+                  </td>
+
+                  <td className="px-4 py-3">
+                    <StatusBadge verified={u.isVerified} />
+                  </td>
+
+                  <td className="px-4 py-3">
+                    <OnlineIndicator lastVisit={u.lastVisit} />
+                  </td>
+
+                  <td className="px-4 py-3 hidden md:table-cell text-xs text-slate-500 whitespace-nowrap">
+                    {u.createdAt ? new Date(u.createdAt).toLocaleDateString() : 'N/A'}
+                  </td>
+
+                  <td className="px-4 py-3">
+                    {/* Wrapped the buttons in a flex container */}
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => handleToggle(u)}
+                        disabled={isProcessing}
+                        className={`text-xs px-3 py-1.5 rounded-lg font-medium transition-colors disabled:opacity-50 whitespace-nowrap ${
+                          u.isVerified
+                            ? 'bg-amber-50 text-amber-600 hover:bg-amber-100' // Swapped revoke to amber so Delete can be the primary red action
+                            : 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100'
+                        }`}
+                      >
+                        {toggling === u._id ? '…' : u.isVerified ? 'Revoke' : 'Verify'}
+                      </button>
+
+                      {/* Render Delete button only if the user is not verified */}
+                      {!u.isVerified && (
+                        <button
+                          onClick={() => handleDelete(u)}
+                          disabled={isProcessing}
+                          className="text-xs px-3 py-1.5 rounded-lg font-medium bg-red-50 text-red-600 hover:bg-red-100 transition-colors disabled:opacity-50 whitespace-nowrap"
+                        >
+                          {deleting === u._id ? '…' : 'Delete'}
+                        </button>
+                      )}
                     </div>
-                  </div>
-                </td>
-
-                <td className="px-4 py-3">
-                  <StatusBadge verified={u.isVerified} />
-                </td>
-
-                <td className="px-4 py-3">
-                  <OnlineIndicator lastVisit={u.lastVisit} />
-                </td>
-
-                <td className="px-4 py-3 hidden md:table-cell text-xs text-slate-500">
-                  {new Date(u.createdAt).toLocaleDateString()}
-                </td>
-
-                <td className="px-4 py-3">
-                  <button
-                    onClick={() => handleToggle(u)}
-                    disabled={toggling === u._id}
-                    className={`text-xs px-3 py-1.5 rounded-lg font-medium transition-colors disabled:opacity-50 ${
-                      u.isVerified
-                        ? 'bg-red-50 text-red-600 hover:bg-red-100'
-                        : 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100'
-                    }`}
-                  >
-                    {toggling === u._id ? '…' : u.isVerified ? 'Revoke' : 'Verify'}
-                  </button>
-                </td>
-              </tr>
-            ))}
+                  </td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       </div>
 
-      {/* Invisible loader element that triggers the next fetch when scrolled into view */}
       {userCursor && (
         <div ref={lastElementRef} className="flex justify-center py-6">
           <div className="flex items-center space-x-2 text-slate-400">

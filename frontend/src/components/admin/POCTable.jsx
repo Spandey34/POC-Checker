@@ -1,76 +1,25 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
-import { BranchBadge } from '../common/Badge';
-import ConfirmDialog from '../common/ConfirmDialog';
-import { deletePOC, getAllPOCs } from '../../services/pocService';
-import toast from 'react-hot-toast';
-import { BRANCH_MAPPINGS } from '../../config/constants';
-
-function normalizePOC(poc = {}) {
-  return {
-    ...poc,
-    name: poc.name || poc.companyName || poc.company || "N/A",
-    createdAt:
-      poc.createdAt ||
-      poc.addedAt ||
-      poc.dateCreated ||
-      poc.updatedAt ||
-      new Date().toISOString(),
-    branch: poc.branch || "",
-    aliases: Array.isArray(poc.aliases) ? poc.aliases : [],
-    userId: poc.userId || poc.addedBy || null,
-  };
-}
+import { useState, useRef, useCallback } from "react";
+import { BranchBadge } from "../common/Badge";
+import ConfirmDialog from "../common/ConfirmDialog";
+import { deletePOC } from "../../services/pocService";
+import toast from "react-hot-toast";
+import { BRANCH_MAPPINGS } from "../../config/constants";
 
 export default function POCTable({
   pocs,
   setPocs,
   pocCursor,
-  setPocCursor,
+  fetchPOCs,
+  loading,
+  loadingMore,
   branch,
   onEdit,
   showAddedBy = false,
   currentUser = null,
 }) {
   const [deleting, setDeleting] = useState(null);
-  const [loading, setLoading] = useState(false);
-  const [loadingMore, setLoadingMore] = useState(false);
 
-  const fetchPOCs = useCallback(
-    async (currentCursor = 0, isReset = false) => {
-      try {
-        if (isReset) setLoading(true);
-        else setLoadingMore(true);
-
-        const response = await getAllPOCs(branch, currentCursor, 20);
-
-        if (isReset) {
-          setPocs((response.data || []).map(normalizePOC));
-        } else {
-          setPocs((prev) => [...prev, ...(response.data || []).map(normalizePOC)]);
-        }
-
-        setPocCursor(response.nextCursor);
-      } catch (error) {
-        console.error('Failed to fetch POCs:', error);
-        toast.error('Failed to load POCs');
-      } finally {
-        setLoading(false);
-        setLoadingMore(false);
-      }
-    },
-    [branch, setPocs, setPocCursor]
-  );
-
-  // Trigger reset and fetch when branch changes
-  useEffect(() => {
-    if (pocs.length === 0) {
-      setPocs([]);
-      setPocCursor(0);
-      fetchPOCs(0, true);
-    }
-  }, [branch]);
-
-  // IntersectionObserver for infinite scrolling
+  // IntersectionObserver for infinite scrolling calls elevated parent controller
   const observer = useRef();
   const lastElementRef = useCallback(
     (node) => {
@@ -85,7 +34,7 @@ export default function POCTable({
 
       if (node) observer.current.observe(node);
     },
-    [loading, loadingMore, pocCursor, fetchPOCs]
+    [loading, loadingMore, pocCursor, fetchPOCs],
   );
 
   const handleDelete = async () => {
@@ -95,13 +44,14 @@ export default function POCTable({
       // Optimistic delete
       setPocs((prev) => prev.filter((p) => p._id !== deleting._id));
     } catch {
-      toast.error('Failed to delete POC');
+      toast.error("Failed to delete POC");
     } finally {
       setDeleting(null);
     }
   };
 
-  if (loading) {
+  // Only show full loading frame if we have absolutely no records rendered yet
+  if (loading && pocs.length === 0) {
     return (
       <div className="text-center py-16 text-slate-400">
         <p className="font-body text-sm animate-pulse">Loading POCs...</p>
@@ -109,7 +59,7 @@ export default function POCTable({
     );
   }
 
-  if (!pocs.length && !loadingMore) {
+  if (!pocs.length && !loadingMore && !loading) {
     return (
       <div className="text-center py-16 text-slate-400">
         <div className="text-4xl mb-3">📋</div>
@@ -121,43 +71,51 @@ export default function POCTable({
   return (
     <>
       <div className="overflow-x-auto rounded-xl border border-slate-200">
-        <table className="w-full text-sm">
+        <table className="w-full text-sm table-fixed min-w-[800px]">
           <thead>
             <tr className="bg-slate-50 border-b border-slate-200 text-left">
-              <th className="px-4 py-3 font-display font-semibold text-navy text-xs uppercase tracking-wider">
+              <th className="w-[30%] px-4 py-3 font-display font-semibold text-navy text-xs uppercase tracking-wider">
                 Company
               </th>
-              <th className="px-4 py-3 font-display font-semibold text-navy text-xs uppercase tracking-wider">
+              <th className="w-[15%] px-4 py-3 font-display font-semibold text-navy text-xs uppercase tracking-wider">
                 Branch
               </th>
               {showAddedBy && (
-                <th className="px-4 py-3 font-display font-semibold text-navy text-xs uppercase tracking-wider">
+                <th className="w-[20%] px-4 py-3 font-display font-semibold text-navy text-xs uppercase tracking-wider">
                   Added By
                 </th>
               )}
-              <th className="px-4 py-3 font-display font-semibold text-navy text-xs uppercase tracking-wider hidden md:table-cell">
+              <th className="w-[25%] px-4 py-3 font-display font-semibold text-navy text-xs uppercase tracking-wider hidden md:table-cell">
                 Aliases
               </th>
-              <th className="px-4 py-3 font-display font-semibold text-navy text-xs uppercase tracking-wider">
+              <th className="w-[10%] px-4 py-3 font-display font-semibold text-navy text-xs uppercase tracking-wider">
                 Actions
               </th>
             </tr>
           </thead>
 
           <tbody className="divide-y divide-slate-100">
-            {pocs.map((poc) => {
+            {pocs.map((poc, index) => {
               const canModify =
                 poc.branch ===
                 BRANCH_MAPPINGS[
-                  currentUser.primaryEmailAddress.emailAddress.slice(6, 8)
+                  currentUser?.primaryEmailAddress?.emailAddress?.slice(6, 8)
                 ];
+                
+              // Attach ref query targeting point strictly on the final item of arrays array list
+              const isLastElement = pocs.length === index + 1;
+
               return (
                 <tr
                   key={poc._id}
+                  ref={isLastElement ? lastElementRef : null}
                   className="hover:bg-slate-50/50 transition-colors group"
                 >
                   <td className="px-4 py-3">
-                    <p className="font-body font-semibold text-navy">
+                    <p
+                      className="font-body font-semibold text-navy truncate"
+                      title={poc.name}
+                    >
                       {poc.name}
                     </p>
                     <p className="text-xs text-slate-400 mt-0.5">
@@ -172,11 +130,17 @@ export default function POCTable({
                   {showAddedBy && (
                     <td className="px-4 py-3">
                       <div className="space-y-1">
-                        <p className="text-sm font-medium text-navy">
-                          {poc.userId?.firstName || 'N/A'}
+                        <p
+                          className="text-sm font-medium text-navy truncate"
+                          title={poc.userId?.firstName}
+                        >
+                          {poc.userId?.firstName || "N/A"}
                         </p>
-                        <p className="text-xs text-slate-400">
-                          {poc.userId?.email || 'N/A'}
+                        <p
+                          className="text-xs text-slate-400 truncate"
+                          title={poc.userId?.email}
+                        >
+                          {poc.userId?.email || "N/A"}
                         </p>
                       </div>
                     </td>
@@ -184,7 +148,7 @@ export default function POCTable({
 
                   <td className="px-4 py-3 hidden md:table-cell">
                     {poc.aliases?.length > 0 ? (
-                      <div className="flex flex-wrap gap-1">
+                      <div className="flex flex-wrap gap-1 max-h-16 overflow-y-auto custom-scrollbar">
                         {poc.aliases.map((a) => (
                           <span
                             key={a}
@@ -200,7 +164,7 @@ export default function POCTable({
                   </td>
 
                   <td className="px-4 py-3">
-                    <div className="flex gap-2 opacity-70 group-hover:opacity-100 transition-opacity">
+                    <div className="flex gap-2 opacity-70 group-hover:opacity-100 transition-opacity whitespace-nowrap">
                       {canModify ? (
                         <>
                           <button
@@ -218,7 +182,9 @@ export default function POCTable({
                           </button>
                         </>
                       ) : (
-                        <span className="text-xs text-slate-300">Not owner</span>
+                        <span className="text-xs text-slate-300">
+                          Not owner
+                        </span>
                       )}
                     </div>
                   </td>
@@ -229,14 +195,32 @@ export default function POCTable({
         </table>
       </div>
 
-      {pocCursor !== null && (
-        <div ref={lastElementRef} className="flex justify-center py-6">
+      {pocCursor !== null && loadingMore && (
+        <div className="flex justify-center py-6">
           <div className="flex items-center space-x-2 text-slate-400">
-            <svg className="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            <svg
+              className="animate-spin h-5 w-5"
+              xmlns="http://www.w3.org/2000/svg"
+              fill="none"
+              viewBox="0 0 24 24"
+            >
+              <circle
+                className="opacity-25"
+                cx="12"
+                cy="12"
+                r="10"
+                stroke="currentColor"
+                strokeWidth="4"
+              ></circle>
+              <path
+                className="opacity-75"
+                fill="currentColor"
+                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+              ></path>
             </svg>
-            <span className="font-body text-sm font-medium animate-pulse">Loading more...</span>
+            <span className="font-body text-sm font-medium animate-pulse">
+              Loading more...
+            </span>
           </div>
         </div>
       )}

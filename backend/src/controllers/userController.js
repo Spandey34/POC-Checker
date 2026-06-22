@@ -36,4 +36,14 @@ const toggleVerification = async (req, res, next) => {
   }
 };
 
-module.exports = { getMe, getAllUsers, toggleVerification };
+const deleteUser = async(req, res, next) => {
+  try {
+    const result = await userService.deleteUser(req.params.id);
+    res.json(result);
+  }
+  catch (err) {
+    next(err);
+  }
+}
+
+module.exports = { getMe, getAllUsers, toggleVerification, deleteUser };

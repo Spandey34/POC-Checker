@@ -10,8 +10,9 @@ import { BRANCHES } from "../config/constants";
 import { useUser } from "@clerk/clerk-react";
 import RecentTab from "../components/admin/RecentTab";
 import { useCount } from "../context/CountContext";
+import toast from "react-hot-toast";
 
-const TABS = ["Search", "POCs", "Recent Activity", "Users"];
+const TABS = ["Search", "POCs", "History", "ICs"];
 
 function normalizePOC(poc = {}) {
   return {
@@ -44,7 +45,9 @@ export default function AdminDashboard() {
 
   const [pocs, setPocs] = useState([]);
   const [users, setUsers] = useState([]);
-  const [pocCursor, setPocCursor] = useState(0); // 0 acts as our starting offset
+  const [pocCursor, setPocCursor] = useState(0); 
+  const [pocLoading, setPocLoading] = useState(false);
+  const [pocLoadingMore, setPocLoadingMore] = useState(false);
   const [userCursor, setUserCursor] = useState(null);
   const [recentCursor, setRecentCursor] = useState(null);
 
@@ -53,14 +56,53 @@ export default function AdminDashboard() {
   const [showForm, setShowForm] = useState(false);
   const [editingPOC, setEditingPOC] = useState(null);
 
+  // Centralized data fetch controller for Branch POC lists
+  const fetchPOCs = useCallback(
+    async (currentCursor = 0, isReset = false) => {
+      try {
+        if (isReset) setPocLoading(true);
+        else setPocLoadingMore(true);
+
+        const response = await getAllPOCs(branchFilter, currentCursor, 20);
+
+        if (isReset) {
+          setPocs((response.data || []).map(normalizePOC));
+        } else {
+          setPocs((prev) => [
+            ...prev,
+            ...(response.data || []).map(normalizePOC),
+          ]);
+        }
+
+        setPocCursor(response.nextCursor);
+      } catch (error) {
+        console.error("Failed to fetch POCs:", error);
+        toast.error("Failed to load POCs");
+      } finally {
+        setPocLoading(false);
+        setPocLoadingMore(false);
+      }
+    },
+    [branchFilter],
+  );
+
+  // Synchronously trigger data loading whenever the branch selection tab filter updates
+  useEffect(() => {
+    fetchPOCs(0, true);
+  }, [branchFilter, fetchPOCs]);
+
   const loadAllPOCs = useCallback(async () => {
     try {
       const data = await getAllPOCs();
-      setAllPOCs((data || []).map(normalizePOC));
+      setAllPOCs(data);
     } catch (err) {
       console.error(err);
     }
   }, [setAllPOCs]);
+
+  useEffect(() => {
+    loadAllPOCs();
+  }, [loadAllPOCs]);
 
   const handleEdit = (poc) => {
     setEditingPOC(poc);
@@ -70,6 +112,19 @@ export default function AdminDashboard() {
   const handleCloseForm = () => {
     setShowForm(false);
     setEditingPOC(null);
+  };
+
+  // Callback executed when the child form saves data perfectly
+  const handlePOCSuccess = (targetBranch) => {
+    loadAllPOCs(); // Refreshes total charts metrics counts
+
+    if (targetBranch === branchFilter) {
+      // If adding a POC to the branch currently viewed, manually execute a fresh reset fetch
+      fetchPOCs(0, true);
+    } else {
+      // If adding to a different branch, changing the filter automatically kicks off the useEffect fetch
+      setBranchFilter(targetBranch);
+    }
   };
 
   const pendingCount = users.filter((u) => !u.isVerified).length;
@@ -101,7 +156,7 @@ export default function AdminDashboard() {
                 color: "bg-blue-500",
               },
               {
-                label: "Total Users",
+                label: "Total ICs",
                 value: usersCount,
                 icon: "👥",
                 color: "bg-purple-500",
@@ -253,7 +308,7 @@ export default function AdminDashboard() {
                 {BRANCHES.map((b) => (
                   <button
                     key={b}
-                    onClick={() => {setBranchFilter(b),setPocs([]),setPocCursor(0)}}
+                    onClick={() => { setBranchFilter(b); setPocs([]); setPocCursor(0); }}
                     className={`text-xs px-3 py-1.5 rounded-lg font-medium border transition-all whitespace-nowrap ${
                       branchFilter === b
                         ? "bg-navy text-white border-navy"
@@ -276,16 +331,22 @@ export default function AdminDashboard() {
             <div className="card p-0 overflow-hidden">
               <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
                 <h3 className="font-display font-semibold text-navy text-sm">
-                  {branchFilter ? `${branchFilter} POCs` : "All POCs"}
+                  {branchFilter} POCs
+                </h3>
+                <h3 className="font-display font-semibold text-navy text-sm">
+                  {pocs.length}
                 </h3>
               </div>
 
               <div className="p-4">
+                {/* Passed down elevated hooks smoothly */}
                 <POCTable
                   pocs={pocs}
                   setPocs={setPocs}
                   pocCursor={pocCursor}
-                  setPocCursor={setPocCursor}
+                  fetchPOCs={fetchPOCs}
+                  loading={pocLoading}
+                  loadingMore={pocLoadingMore}
                   branch={branchFilter}
                   onEdit={handleEdit}
                   showAddedBy
@@ -296,11 +357,11 @@ export default function AdminDashboard() {
           </div>
         )}
 
-        {activeTab === "Recent Activity" && (
+        {activeTab === "History" && (
           <div className="space-y-5">
             <div className="flex items-center justify-between">
               <h3 className="font-display font-semibold text-navy">
-                Recent Activity
+                History
               </h3>
 
               <span className="text-sm text-slate-500">
@@ -321,11 +382,11 @@ export default function AdminDashboard() {
           </div>
         )}
 
-        {activeTab === "Users" && (
+        {activeTab === "ICs" && (
           <div className="space-y-5">
             <div className="flex items-center gap-4">
               <h3 className="font-display font-semibold text-navy">
-                Registered Users — {users.length} total
+                Registered ICs — {users.length} total
               </h3>
 
               <div className="flex gap-2 text-xs text-slate-500">
@@ -357,6 +418,7 @@ export default function AdminDashboard() {
       <POCForm
         isOpen={showForm}
         onClose={handleCloseForm}
+        onSuccess={handlePOCSuccess}
         editing={editingPOC}
       />
     </div>

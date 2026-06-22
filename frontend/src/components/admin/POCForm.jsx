@@ -79,7 +79,7 @@ export default function POCForm({
         toast.success("POC added");
       }
 
-      onSuccess();
+      if(onSuccess) onSuccess(payload.branch);
       onClose();
     } catch (err) {
       toast.error(
