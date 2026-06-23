@@ -64,7 +64,18 @@ jobs:
     needs: build-and-validate
     runs-on: ubuntu-latest
     steps:
-      - name: Trigger Render Webhook
-        run: |
-          curl -X POST "${{ secrets.RENDER_DEPLOY_WEBHOOK_URL_FRONTEND }}"
-          curl -X POST "${{ secrets.RENDER_DEPLOY_WEBHOOK_URL_BACKEND }}"
+      # Step 1: Deploy Backend synchronously
+      - name: Deploy Backend
+        uses: johnbeynon/render-deploy-action@v0.0.8
+        with:
+          service-id: ${{ secrets.RENDER_BACKEND_SERVICE_ID }}
+          api-key: ${{ secrets.RENDER_API_KEY }}
+          wait-for-success: true # This makes the action wait until Render says "live"
+
+      # Step 2: Deploy Frontend ONLY if Backend succeeds
+      - name: Deploy Frontend
+        uses: johnbeynon/render-deploy-action@v0.0.8
+        with:
+          service-id: ${{ secrets.RENDER_FRONTEND_SERVICE_ID }}
+          api-key: ${{ secrets.RENDER_API_KEY }}
+          wait-for-success: true
