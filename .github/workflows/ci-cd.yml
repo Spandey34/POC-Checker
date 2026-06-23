@@ -64,18 +64,62 @@ jobs:
     needs: build-and-validate
     runs-on: ubuntu-latest
     steps:
-      # Step 1: Deploy Backend synchronously
-      - name: Deploy Backend
-        uses: johnbeynon/render-deploy-action@v0.0.8
-        with:
-          service-id: ${{ secrets.RENDER_BACKEND_SERVICE_ID }}
-          api-key: ${{ secrets.RENDER_API_KEY }}
-          wait-for-success: true # This makes the action wait until Render says "live"
+      - name: Deploy Backend and Wait
+        env:
+          RENDER_API_KEY: ${{ secrets.RENDER_API_KEY }}
+          SERVICE_ID: ${{ secrets.RENDER_BACKEND_SERVICE_ID }}
+        run: |
+          echo "🚀 Triggering backend deployment..."
+          
+          # 1. Trigger the deploy and save the response
+          DEPLOY_RES=$(curl -s -X POST https://api.render.com/v1/services/$SERVICE_ID/deploys \
+            -H "Authorization: Bearer $RENDER_API_KEY" \
+            -H "Accept: application/json" \
+            -H "Content-Type: application/json")
+            
+          # 2. Extract the Deploy ID using jq
+          DEPLOY_ID=$(echo $DEPLOY_RES | jq -r '.id')
+          
+          if [ "$DEPLOY_ID" == "null" ] || [ -z "$DEPLOY_ID" ]; then
+            echo "❌ Failed to trigger deploy. Render response: $DEPLOY_RES"
+            exit 1
+          fi
+          
+          echo "✅ Deployment triggered! ID: $DEPLOY_ID"
+          echo "⏳ Waiting for Render to finish building..."
+          
+          # 3. Loop and poll the status every 15 seconds
+          while true; do
+            STATUS_RES=$(curl -s -X GET https://api.render.com/v1/services/$SERVICE_ID/deploys/$DEPLOY_ID \
+              -H "Authorization: Bearer $RENDER_API_KEY" \
+              -H "Accept: application/json")
+              
+            STATUS=$(echo $STATUS_RES | jq -r '.status')
+            echo "Current status: $STATUS"
+            
+            if [ "$STATUS" == "live" ]; then
+              echo "🎉 Backend deployed successfully!"
+              break
+            elif [[ "$STATUS" == "build_failed" || "$STATUS" == "update_failed" || "$STATUS" == "canceled" ]]; then
+              echo "❌ Backend deployment failed on Render! Halting workflow."
+              exit 1
+            fi
+            
+            sleep 15
+          done
 
-      # Step 2: Deploy Frontend ONLY if Backend succeeds
-      - name: Deploy Frontend
-        uses: johnbeynon/render-deploy-action@v0.0.8
-        with:
-          service-id: ${{ secrets.RENDER_FRONTEND_SERVICE_ID }}
-          api-key: ${{ secrets.RENDER_API_KEY }}
-          wait-for-success: true
+      - name: Deploy Frontend (Only runs if Backend succeeds)
+        env:
+          RENDER_API_KEY: ${{ secrets.RENDER_API_KEY }}
+          SERVICE_ID: ${{ secrets.RENDER_FRONTEND_SERVICE_ID }}
+        run: |
+          echo "🚀 Triggering frontend deployment..."
+          
+          # Since this is the last step, we don't necessarily need to wait for it, 
+          # but we trigger it the exact same way.
+          curl -s -X POST https://api.render.com/v1/services/$SERVICE_ID/deploys \
+            -H "Authorization: Bearer $RENDER_API_KEY" \
+            -H "Accept: application/json" \
+            -H "Content-Type: application/json"
+            
+          echo "✅ Frontend deployment triggered!"
